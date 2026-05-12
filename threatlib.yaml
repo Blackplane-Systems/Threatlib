@@ -1,0 +1,194 @@
+threatlib:
+  platform: "your-platform-name"
+  version: "2.0"
+  environment: "shadow_mode"
+  shadow_mode: true
+  platform_adapter: "social_network"
+
+  cold_start:
+    phase1_days: 30
+    phase2_days: 60
+    min_accounts_for_platform_baseline: 500
+    published_prior_weight_in_stable: 0.2
+
+  minimum_detectors_required: 3
+
+  signals:
+    email_entropy:       { weight: 1.0, enabled: true, decay_halflife_days: 30 }
+    psycholinguistic:    { weight: 1.0, enabled: true, decay_halflife_days: null }
+    device_fingerprint:  { weight: 1.5, enabled: true, decay_halflife_days: 365 }
+    imu_motion:          { weight: 1.2, enabled: true, decay_halflife_days: 7 }
+    behavioral_timing:   { weight: 1.2, enabled: true, decay_halflife_days: null }
+    ip_network:          { weight: 1.0, enabled: true, decay_halflife_days: 7 }
+    registration_velocity: { weight: 1.8, enabled: true, decay_halflife_days: 1 }
+    graph_distance:      { weight: 2.0, enabled: true, decay_halflife_days: 90 }
+    new_account_prior:   { weight: 0.5, enabled: true, decay_halflife_days: null }
+    report_history:      { weight: 1.5, enabled: true, decay_halflife_days: 90 }
+    session_anomaly:     { weight: 1.3, enabled: true, decay_halflife_days: 7 }
+    content_signal:      { weight: 1.1, enabled: true, decay_halflife_days: 14 }
+
+  plugins: []
+
+  attack_vectors:
+    enabled: ["ALL"]
+    disabled: []
+
+  detectors:
+    cross_entropy_coherence:    { weight: 1.3, enabled: true, decay_halflife_days: null }
+    account_age_velocity:       { weight: 1.4, enabled: true, decay_halflife_days: 7 }
+    external_link_pattern:      { weight: 1.5, enabled: true, decay_halflife_days: 1 }
+    payment_signal:             { weight: 2.0, enabled: true, decay_halflife_days: 1 }
+    hawkes_burst_v2:            { weight: 1.8, enabled: true, decay_halflife_days: 1 }
+    community_detection:        { weight: 1.5, enabled: true, decay_halflife_days: 7 }
+    cross_signal_coherence_v2:  { weight: 1.3, enabled: true, decay_halflife_days: null }
+    survival_analysis:          { weight: 1.0, enabled: true, decay_halflife_days: 30 }
+    hmm_intent:                 { weight: 1.5, enabled: true, decay_halflife_days: 7 }
+    sir_contagion:              { weight: 1.0, enabled: true, decay_halflife_days: 30 }
+    coordinated_behavior:       { weight: 2.0, enabled: true, decay_halflife_days: 7 }
+
+  action_thresholds:
+    monitor:            0.00
+    velocity_throttle:  0.30
+    audience_narrow:    0.45
+    review_queue:       0.55
+    soft_restrict:      0.65
+    hard_restrict:      0.80
+    suspend:            0.90
+    auto_ban:           0.97
+
+  feature_restrictions:
+    read_content:  { threshold: 0.90, steepness: 5.0 }
+    search:        { threshold: 0.85, steepness: 5.0 }
+    react:         { threshold: 0.60, steepness: 6.0 }
+    follow_user:   { threshold: 0.45, steepness: 9.0 }
+    post_content:  { threshold: 0.50, steepness: 8.0 }
+    send_dm:       { threshold: 0.35, steepness: 10.0 }
+    create_group:  { threshold: 0.25, steepness: 12.0 }
+    mass_invite:   { threshold: 0.15, steepness: 15.0 }
+
+  topic_gates:
+    - { category: "electoral", risk_threshold: 0.30, action: "hold_for_review" }
+    - { category: "health_misinformation", risk_threshold: 0.25, action: "shadow_limit" }
+    - { category: "financial_scam", risk_threshold: 0.20, action: "block_post" }
+
+  reporting:
+    reports_to_trigger_review: 3
+    reporter_trust_weighted: true
+    min_reporter_account_age_days: 7
+    severe_category_immediate_review: ["credible_threat", "csam", "doxxing"]
+    severe_category_count: 1
+
+  adversarial_robustness:
+    score_jitter_laplace_scale: 0.01
+    signal_rotation_probability: 0.05
+    canary_check_interval_hours: 12
+
+  timing:
+    ks_mode: "analytical"
+    keystroke_human_prior:
+      distribution: "weibull"
+      shape: 1.5
+      scale_ms: 180
+    field_correction_factors:
+      email: 0.8
+      bio: 1.3
+
+  graph:
+    backend: "sqlite"
+    db_path: "./threatlib.db"
+    bfs_max_depth: 3
+    bfs_weight_k1: 20.0
+    bfs_weight_k2: 8.0
+    bfs_weight_k3: 3.0
+
+  suspicious_tlds: [".xyz", ".top", ".click", ".loan", ".work", ".date", ".stream", ".gq", ".tk"]
+  url_shortener_list: ["bit.ly", "t.co", "tinyurl.com", "goo.gl", "ow.ly"]
+  topic_sensitivity_list: []
+
+  webhooks:
+    high_risk_alert: ""
+    alert_threshold: 0.75
+    canary_drift_alert: ""
+
+  survival_model:
+    enabled: true
+    cold_start_weibull_shape: 1.2
+    cold_start_weibull_scale_hours: 720
+
+  conformal_prediction:
+    enabled: true
+    coverage: 0.90
+    min_calibration_set_size: 200
+
+  appeal:
+    appeal_enabled: true
+    prior_learning_rate: 0.05
+    false_positive_label_confidence: 0.8
+    max_appeals_per_account: 3
+
+  payment:
+    velocity_threshold: 20
+    variance_floor: 100
+    new_account_limit: 10000
+
+  high_impact_actions:
+    - send_dm
+    - create_group
+    - initiate_payment
+    - create_listing
+    - broadcast_message
+    - claim_professional_status
+    - recommend_treatment
+
+  giveaway_terms:
+    - "free giveaway"
+    - "click the link"
+    - "limited time"
+    - "winner selected"
+    - "claim your prize"
+    - "crypto giveaway"
+
+  hmm:
+    states: ["benign", "watching", "escalating", "acting"]
+    min_events: 5
+    cold_start_framework: "birdnest"
+
+  contagion:
+    model: "all"
+    propagation_depth: 3
+    sir_beta: 0.08
+    sir_gamma: 0.10
+    ising_coupling_base: 0.05
+    belief_propagation_max_iter: 50
+    belief_propagation_convergence: 0.001
+
+  community_detection:
+    algorithm: "leidenalg"
+    min_cluster_size: 5
+    cluster_creation_window_hours: 24
+    spectral_gap_threshold: 0.3
+    mutual_info_threshold: 0.3
+    granger_pvalue: 0.05
+
+  federation:
+    enabled: false
+    partner_endpoints: []
+    shared_signal_types: ["graph_distance", "registration_velocity"]
+    differential_privacy_epsilon: 1.0
+
+  network_isolation:
+    enabled: true
+    isolation_mode: "silent"
+    demote_search_results: true
+    demote_recommendations: true
+    restrict_new_followers: true
+
+  persistent_homology:
+    enabled: true
+    filtration: "vietoris_rips"
+    max_dimension: 1
+
+  canary:
+    accounts: []
+    check_interval_hours: 12
+    alert_threshold: 0.50

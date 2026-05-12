@@ -1,0 +1,12 @@
+{
+  "account_id": "human_account_hash_001",
+  "device_hash": "new_unseen_device_hash",
+  "device_platform": "web",
+  "ip_prefix": "192.0.2",
+  "ip_geo_country": "RU",
+  "device_timezone": "Europe/Moscow",
+  "metadata": {
+    "session_duration_s": 1,
+    "dm_to_non_followers_1h": 40
+  }
+}
