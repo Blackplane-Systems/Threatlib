@@ -1,40 +1,50 @@
-# ThreatLib: Universal Account Risk Scoring SDK
+# ThreatLib
 
-[![Python Version](https://img.shields.io/badge/python-3.8%2B-blue.svg)](https://python.org/)
-[![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://www.apache.org/licenses/LICENSE-2.0)
+ThreatLib is a platform-agnostic account risk scoring engine for backend services that need consistent, auditable, and privacy-preserving abuse detection across products. It accepts heterogeneous account, device, network, behavior, graph, payment, and content metadata; normalizes events through platform adapters; runs detector evidence through a dependency-aware orchestration graph; and returns a risk score, confidence band, action recommendation, and feature-level restriction map.
 
-**ThreatLib** is a platform-agnostic account risk scoring SDK and engine built for enterprise scale. It normalizes signals from any application and produces resilient, auditable risk decisions using **Dempster Shafer evidence fusion** and conformal confidence bands.
+ThreatLib is designed for environments where missing data is common. A detector that lacks required input returns `DetectorResult.uncertain()` and does not treat absence of evidence as evidence of legitimacy. This behavior is central to the engine’s safety model.
 
-**Why use ThreatLib:** It lets teams ship a consistent, privacy-preserving risk layer across products without rebuilding detection logic per platform. The SDK absorbs heterogeneous signals, handles missing data safely, and produces calibrated, explainable outputs suitable for compliance and operations.
+## Production Safety
 
-**How to use ThreatLib:** Integrate it as a backend library or run it as a service. Send normalized account data and events through your adapter, review scores in shadow mode, then enable enforcement via YAML policy once thresholds are validated for your audience.
+ThreatLib defaults to `shadow_mode: true`.
 
-## System Overview
+In shadow mode, the engine computes scores, detector outputs, restrictions, and audit records, but the returned action is always `monitor`. Production teams should review shadow-mode output against real outcomes before enabling active enforcement.
 
-ThreatLib separates signal evaluation from enforcement through a layered pipeline:
-1. **Platform Adapters:** Declare available signals, map platform events to universal event types, and mark relevant attack vectors. Adapters are additive and never restrict signals.
-2. **Signal Detectors:** Independent detectors run in parallel. Interdependent detectors form a DAG and run in topological order.
-3. **Evidence Fusion:** Dempster Shafer combination with Murphy averaging for high conflict.
-4. **Risk Synthesis:** Composite score with conformal prediction bands and adversarial robustness safeguards.
-5. **Action Engine:** YAML-driven restriction tiers and feature-level controls.
-6. **API, SDKs, and Dashboard:** FastAPI server, Android Kotlin SDK, browser timing collector, and Streamlit operator dashboard.
+CSAM reports are handled by a hardcoded child-safety emergency bypass. A report with category `csam` produces immediate `suspend` escalation in active mode. This behavior is intentionally not configurable through YAML. Shadow mode still returns `monitor` while logging the emergency escalation path.
 
-## Key Capabilities
+## System Architecture
 
-- **Cross-Platform Coverage:** Works across social networks, fintech, health apps, marketplaces, and messaging platforms.
-- **Zero PII Storage:** Only hashed identifiers and derived features are persisted.
-- **Cold-Start Ready:** Produces scores from account #1 using calibrated priors and wide confidence bands.
-- **Temporal and Graph Models:** Hawkes burst modeling, HMM intent inference, SIR/Ising contagion, community detection, and persistent homology.
-- **Append-Only Auditing:** Immutable SQLite logs for verifiable forensic trails.
+ThreatLib is organized into seven operational layers:
 
-## Attack Vector Coverage (15)
+1. **Contracts:** `DetectorResult`, `BaseDetector`, Dempster-Shafer fusion, policy loading, and SQLite persistence.
+2. **Platform Adapters:** Event and field normalization for social, messaging, payment, health, marketplace, video, and generic platforms.
+3. **Independent Detectors:** Detectors that rely only on account data, event data, or persisted context.
+4. **Interdependent Detectors:** DAG-scheduled detectors that use outputs from lower layers.
+5. **Risk Synthesis:** Evidence fusion, quorum enforcement, temporal decay, signal weighting, jitter, and confidence bands.
+6. **Action Engine:** Threshold-based actions, feature restrictions, emergency bypass handling, and network isolation metadata.
+7. **Interfaces:** FastAPI service, Python SDK surface, JavaScript timing collector, Android Kotlin SDK sketch, Streamlit dashboard, and federation schema.
+
+## Core Invariants
+
+- Missing detector input returns uncertainty, never legitimacy.
+- Every scoring event is written to an append-only audit log.
+- Shadow mode always returns `monitor`.
+- Quorum is required before active action decisions.
+- Plaintext PII is not persisted.
+- Cold start scoring works from the first account.
+- Detector dependencies are resolved as an acyclic graph.
+- Platform adapters declare available signals but do not restrict extra data.
+
+## Supported Attack Vectors
+
+ThreatLib includes detection paths for:
 
 - Automated bot account creation
 - Credential stuffing and account takeover
-- Fake identity or synthetic accounts
+- Fake identity and synthetic account creation
 - DM phishing and romance scams
-- Fake giveaway and external redirect attacks
-- Coordinated inauthentic behavior and influence operations
+- Fake giveaway and redirect attacks
+- Coordinated inauthentic behavior
 - Payment and transaction fraud
 - Misinformation seeding
 - Harassment campaigns
@@ -42,115 +52,193 @@ ThreatLib separates signal evaluation from enforcement through a layered pipelin
 - Sybil attacks
 - Compromised legitimate accounts
 - Fake professional or credential fraud
-- Child safety and CSAM escalation
-- API abuse and scraping bots
+- Child-safety escalation
+- API abuse and scraping
 
-## Mathematical Models
+## Detector Families
 
-- Dempster Shafer evidence fusion with Murphy averaging
-- Conformal prediction bands for calibrated confidence
-- Multivariate Hawkes process for burst dynamics
-- Hidden Markov Model (HMM) for intent inference
-- Cox proportional hazards survival analysis
-- SIR contagion model on account graphs
-- Ising model with loopy belief propagation
-- Community detection (Louvain/Leiden)
-- Persistent homology sketch for graph topology
+The detector library includes:
 
-## Detector Suite
-
-**Independent detectors** run without cross-dependencies and return `uncertain()` on absent data:
-- Behavioral timing
-- Device fingerprinting
-- IP/network analysis
-- IMU motion
-- Psycholinguistics
-- Email entropy
-- Registration velocity
-- Graph distance
-- New account prior
-- Report history
-- Session anomaly
-- Content signals
-
-**Interdependent detectors** run after Layer 2 outputs and use a DAG orchestrator in [threatlib/signals/orchestrator.py](threatlib/signals/orchestrator.py):
+- Email entropy analysis
+- Psycholinguistic feature extraction
+- Device fingerprint analysis
+- IMU motion analysis
+- Behavioral timing analysis
+- IP and network reputation analysis
+- Registration velocity analysis
+- Graph distance analysis
+- New-account prior modeling
+- Report history analysis
+- Session anomaly detection
+- Content signal detection
 - Cross-entropy coherence
 - Account-age velocity
-- External link pattern
-- Payment signal
-- Hawkes burst v2
+- External link pattern detection
+- Payment signal detection
+- Hawkes burst modeling
 - Community detection
-- Cross-signal coherence v2
+- Cross-signal coherence
 - Survival analysis
-- HMM intent
-- SIR contagion
-- Coordinated behavior
+- HMM intent inference
+- SIR contagion modeling
+- Coordinated behavior detection
 
-## Scoring and Actioning
+## Mathematical Components
 
-- Evidence fusion and conflict handling in [threatlib/fusion/dempster_shafer.py](threatlib/fusion/dempster_shafer.py).
-- Risk synthesis with conformal bands in [threatlib/risk/synthesis.py](threatlib/risk/synthesis.py) and [threatlib/risk/conformal.py](threatlib/risk/conformal.py).
-- Feature restriction engine in [threatlib/action/feature_restrictor.py](threatlib/action/feature_restrictor.py).
-- Shadow mode is the safe default and always returns `monitor` while still scoring.
-- CSAM reports trigger immediate escalation and are not configurable.
+ThreatLib uses the following model families:
 
-## SDKs and Interfaces
+- Dempster-Shafer evidence theory
+- Murphy averaging for high-conflict evidence
+- Conformal prediction
+- Weibull timing priors
+- Hawkes-style burst dynamics
+- Hidden Markov Models
+- Cox proportional hazards
+- SIR contagion models
+- Ising-style belief propagation
+- Louvain community detection
+- Spectral graph analysis
+- Persistent homology sketches
+- Mutual information estimates
+- Granger causality helpers
 
-- FastAPI server in [threatlib/server.py](threatlib/server.py).
-- Android Kotlin SDK under [android-sdk/threatlib-android](android-sdk/threatlib-android).
-- Browser timing collector in [js-sdk/threatlib-timing.js](js-sdk/threatlib-timing.js).
-- Streamlit operator dashboard in [threatlib/dashboard/app.py](threatlib/dashboard/app.py).
-- Federation schema skeleton in [threatlib/federation/schema.py](threatlib/federation/schema.py).
-
-## Operational Safety
-
-**Shadow mode is the default.** Do not engage active enforcement in production until you have reviewed at least 30 days of shadow scores against your target audience. Under shadow mode, actions are still computed and logged, but the returned action is always `monitor`.
-
-**Child safety emergency bypass:** A report with category `csam` triggers immediate escalation and cannot be disabled by YAML. Shadow mode still returns `monitor` for dry-run deployments.
+Formula references are maintained in the project formula index when present and validated by the test suite.
 
 ## Quick Start
 
-### Standalone Server
-
-Run ThreatLib as an autonomous microservice using the built-in FastAPI implementation:
+Install the package in editable mode:
 
 ```bash
 pip install -e .
+```
+
+Run the API server:
+
+```bash
 threatlib-server --config threatlib.yaml --host 0.0.0.0 --port 8000
+```
+
+Run the dashboard:
+
+```bash
 threatlib-dashboard --config threatlib.yaml
 ```
 
-### SDK Integration
+Import public calibration and threat-intelligence datasets:
 
-Embed ThreatLib strictly as a library into your secure backend:
+```bash
+threatlib-import-intel --config threatlib.yaml --tranco "<path-to>/top-1m.csv" --facebook "<path-to>/facebook_combined.txt" --sms "<path-to>/sms+spam+collection"
+```
+
+Train the compact public baseline model artifact:
+
+```bash
+threatlib-train-base-model --tranco "<path-to>/top-1m.csv" --facebook "<path-to>/facebook_combined.txt" --sms "<path-to>/sms+spam+collection" --output threatlib/models/base_model.json
+```
+
+Refresh live indicator feeds:
+
+```bash
+threatlib-import-intel --config threatlib.yaml --fetch tor_exit_nodes --fetch urlhaus_recent --prune-expired
+```
+
+Use ThreatLib as a Python SDK:
 
 ```python
 import threatlib as sdk
 from threatlib.config.policy import PolicyLoader
 
-# Initialize risk policy configuration
 policy = PolicyLoader.load("threatlib.yaml")
-
-print(f"Engine instantiated. Shadow mode restrictions: {policy.shadow_mode}")
+print(policy.shadow_mode)
 ```
+
+## API Surface
+
+The FastAPI service provides:
+
+- `POST /score` for account scoring
+- `POST /event` for ongoing event ingestion
+- `POST /report` for abuse reports
+- `POST /appeal` for appeal submission
+- `GET /account/{account_id}` for privacy-safe account state
+- `GET /health` for service status
+- `GET /metrics` for operational counters
+- `GET /graph` for graph and community visibility
+
+## Configuration
+
+The default policy lives in `threatlib.yaml`. Important sections include:
+
+- `shadow_mode`
+- `minimum_detectors_required`
+- `signals`
+- `detectors`
+- `action_thresholds`
+- `feature_restrictions`
+- `platform_adapter`
+- `attack_vectors`
+- `payment`
+- `hmm`
+- `contagion`
+- `community_detection`
+- `federation`
+- `network_isolation`
+- `persistent_homology`
+- `canary`
 
 ## Repository Map
 
-- Detector contracts: [threatlib/signals/base.py](threatlib/signals/base.py)
-- Orchestrator and DAG execution: [threatlib/signals/orchestrator.py](threatlib/signals/orchestrator.py)
-- Evidence fusion: [threatlib/fusion/dempster_shafer.py](threatlib/fusion/dempster_shafer.py)
-- Risk synthesis: [threatlib/risk/synthesis.py](threatlib/risk/synthesis.py)
-- Conformal prediction: [threatlib/risk/conformal.py](threatlib/risk/conformal.py)
-- Account graph: [threatlib/graph/account_graph.py](threatlib/graph/account_graph.py)
-- Platform adapters: [threatlib/adapters](threatlib/adapters)
-- Policy schema: [threatlib/config/policy.py](threatlib/config/policy.py)
-- Default policy: [threatlib.yaml](threatlib.yaml)
-- Tests: [tests](tests)
+- `threatlib/signals/base.py`: detector contracts
+- `threatlib/signals/orchestrator.py`: detector DAG orchestration
+- `threatlib/fusion/dempster_shafer.py`: evidence fusion
+- `threatlib/risk/synthesis.py`: risk pipeline
+- `threatlib/risk/conformal.py`: confidence bands
+- `threatlib/action/feature_restrictor.py`: action and restriction logic
+- `threatlib/adapters/`: platform adapters
+- `threatlib/graph/account_graph.py`: SQLite persistence and graph helpers
+- `threatlib/intel/`: safe threat-intelligence importers and hashed retention
+- `threatlib/pretrain/`: public-dataset baseline model training
+- `threatlib/models/base_model.json`: compact pretrained baseline artifact
+- `threatlib/contagion/`: SIR and Ising models
+- `threatlib/dashboard/app.py`: Streamlit dashboard
+- `js-sdk/threatlib-timing.js`: browser timing collector
+- `android-sdk/threatlib-android/`: Android SDK sketch
+- `tests/`: unit and integration tests
 
-## Contribution Notes
+## Threat Intelligence Datasets
 
-Changes should preserve privacy invariants, keep absent data classified as uncertain, and maintain the shadow mode safety default until operational review is complete. All modifications should continue to pass `pytest tests/` before being submitted.
+ThreatLib can ingest public calibration data and live abuse indicators without storing raw malicious URLs, full IP addresses, SMS text, or account-like identifiers. The import path is intentionally conservative:
+
+- Remote downloads are restricted to exact allowlisted feed names: `tor_exit_nodes` and `urlhaus_recent`.
+- Remote feeds must use HTTPS, must not redirect, must match expected text content types, and must stay under parser size limits.
+- URLhaus rows are treated as inert indicators. ThreatLib hashes the URL and host values and never requests the URLs listed inside the CSV.
+- Tor exit IPs are hashed, and only hashed exact IP indicators plus hashed network prefixes are retained.
+- Tranco domains are stored as hashed training features with rank buckets.
+- UCI SMS Spam messages are converted into derived text features such as length, URL count, digit fraction, uppercase fraction, and urgency-term count. Raw SMS text is not stored.
+- SNAP Facebook graph data is reduced to aggregate graph calibration features. Raw edge endpoints are not persisted in the ThreatLib database.
+- Hashed indicators and derived feature rows expire by default after `30` days and can be removed with `threatlib-import-intel --prune-expired`.
+
+The repository includes `threatlib/models/base_model.json`, a compact baseline trained from the local Tranco, SNAP ego-Facebook, and UCI SMS Spam files. It stores source hashes, aggregate domain and graph statistics, numeric SMS classifier coefficients, scaler parameters, and validation metrics. It does not store raw dataset rows, raw SMS messages, raw URLs, raw graph edges, or full domain lists.
+
+## Testing
+
+Run the full test suite:
+
+```bash
+pytest tests/ -v --tb=short
+```
+
+The tests cover detector contracts, evidence fusion, privacy behavior, adapters, DAG execution, v2 detectors, contagion models, graph topology helpers, action handling, API integration, CSAM bypass behavior, and packaging entry points.
+Threat-intelligence tests additionally verify allowlist enforcement, inert URLhaus parsing, hashed indicator storage, derived-only training features, and expiry pruning.
+
+## Operational Guidance
+
+Start every deployment in shadow mode. Review score distributions, detector uncertainty rates, appeal outcomes, and false-positive candidates before enabling enforcement. Calibrate thresholds per platform because normal behavior differs significantly between social, payment, health, messaging, marketplace, and content products.
+
+Do not add plaintext usernames, email local parts, full IP addresses, raw message content, or raw sensor streams to persistence. Store hashes, prefixes, aggregate features, and derived statistics only.
+
+Do not import arbitrary malware feeds by URL. Add a named allowlisted feed and parser first, then test that the importer stores only hashes or derived features. Indicator retention is configured in `threatlib.yaml` under `threat_intel.retention_days`.
 
 ## License
 
-Licensed under the Apache License 2.0. See `LICENSE` for more information.
+Licensed under the Apache License 2.0. See `LICENSE` for details.

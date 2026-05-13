@@ -1,5 +1,5 @@
 # ThreatLib v1.0 — Core Formula and Logic Index
-# Purpose: Cross-reference every formula to its implementation for verification.
+# Formula and implementation reference.
 
 ## How to use this file
 Find the formula name. Go to the file and function listed. Run the test listed to verify.
