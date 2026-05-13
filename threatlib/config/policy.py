@@ -192,6 +192,20 @@ class ThreatIntelConfig(BaseModel):
     allowed_remote_feeds: list[str] = Field(default_factory=lambda: ["tor_exit_nodes", "urlhaus_recent"])
 
 
+class FastDeployConfig(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    enabled: bool = False
+    observation_hours: float = Field(default=24.0, gt=0.0)  # REF: Day-2 operator workflow - require one day of shadow observation.
+    min_scores: int = Field(default=25, ge=0)  # REF: Fast-deploy minimum score volume for low-traffic deployments.
+    min_labels: int = Field(default=10, ge=0)  # REF: Fast-deploy minimum confirmed outcomes before action escalation.
+    max_false_positive_rate: float = Field(default=0.10, ge=0.0, le=1.0)  # REF: Conservative early false-positive guardrail.
+    max_false_negative_rate: float = Field(default=0.35, ge=0.0, le=1.0)  # REF: Early deployment tolerates recall tuning while surfacing misses.
+    min_precision: float = Field(default=0.70, ge=0.0, le=1.0)  # REF: Fast-deploy precision guardrail.
+    min_recall: float = Field(default=0.60, ge=0.0, le=1.0)  # REF: Fast-deploy recall guardrail.
+    active_action_cap: str = "soft_restrict"
+
+
 class Policy(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -250,6 +264,7 @@ class Policy(BaseModel):
     persistent_homology: PersistentHomologyConfig = Field(default_factory=PersistentHomologyConfig)
     canary: CanaryConfig = Field(default_factory=CanaryConfig)
     threat_intel: ThreatIntelConfig = Field(default_factory=ThreatIntelConfig)
+    fast_deploy: FastDeployConfig = Field(default_factory=FastDeployConfig)
 
     @model_validator(mode="after")
     def validate_thresholds(self) -> "Policy":

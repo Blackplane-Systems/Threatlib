@@ -169,6 +169,22 @@ class AccountGraph:
                     created_at REAL NOT NULL
                 );
 
+                CREATE TABLE IF NOT EXISTS feedback_labels (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    account_id TEXT NOT NULL,
+                    outcome TEXT NOT NULL,
+                    predicted_label INTEGER NOT NULL,
+                    true_label INTEGER NOT NULL,
+                    risk_score REAL,
+                    threshold REAL,
+                    source TEXT NOT NULL,
+                    notes_hash TEXT,
+                    created_at REAL NOT NULL
+                );
+
+                CREATE INDEX IF NOT EXISTS idx_feedback_labels_created
+                ON feedback_labels(created_at);
+
                 CREATE TABLE IF NOT EXISTS federation_exports (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     signal_type TEXT NOT NULL,
@@ -578,6 +594,10 @@ class AccountGraph:
         row = self.conn.execute("SELECT COUNT(*) AS count FROM audit_log").fetchone()
         return int(row["count"])
 
+    def first_audit_timestamp(self) -> float | None:
+        row = self.conn.execute("SELECT MIN(timestamp) AS first_ts FROM audit_log").fetchone()
+        return float(row["first_ts"]) if row and row["first_ts"] is not None else None
+
     def latest_risk_score(self, account_id: str) -> float | None:
         row = self.conn.execute(
             "SELECT final_score FROM audit_log WHERE account_id = ? ORDER BY timestamp DESC LIMIT 1",
@@ -639,6 +659,113 @@ class AccountGraph:
     def calibration_scores(self) -> list[float]:
         rows = self.conn.execute("SELECT risk_score, true_label FROM calibration_labels").fetchall()
         return [abs(float(row["risk_score"]) - float(row["true_label"])) for row in rows]
+
+    def record_feedback_label(
+        self,
+        account_id: str,
+        outcome: str,
+        source: str = "manual",
+        risk_score: float | None = None,
+        threshold: float | None = None,
+        notes: str | None = None,
+        created_at: float | None = None,
+    ) -> dict[str, Any]:
+        normalized = normalize_feedback_outcome(outcome)
+        if normalized is None:
+            raise ValueError("outcome must be one of true_positive, true_negative, false_positive, false_negative")
+        predicted_label, true_label = normalized
+        ts = created_at if created_at is not None else time.time()
+        notes_hash = hash_value(notes) if notes else None
+        with self._lock, self.conn:
+            self.conn.execute(
+                """
+                INSERT INTO feedback_labels(
+                    account_id, outcome, predicted_label, true_label, risk_score, threshold,
+                    source, notes_hash, created_at
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    account_id,
+                    canonical_feedback_outcome(predicted_label, true_label),
+                    predicted_label,
+                    true_label,
+                    risk_score,
+                    threshold,
+                    source[:64],
+                    notes_hash,
+                    ts,
+                ),
+            )
+        if risk_score is not None:
+            self.record_calibration_label(account_id, risk_score, true_label)
+        return {
+            "account_id": account_id,
+            "outcome": canonical_feedback_outcome(predicted_label, true_label),
+            "predicted_label": predicted_label,
+            "true_label": true_label,
+            "risk_score": risk_score,
+            "source": source[:64],
+            "created_at": ts,
+        }
+
+    def feedback_count(self, since_ts: float | None = None) -> int:
+        query = "SELECT COUNT(*) AS count FROM feedback_labels"
+        params: list[Any] = []
+        if since_ts is not None:
+            query += " WHERE created_at >= ?"
+            params.append(since_ts)
+        row = self.conn.execute(query, params).fetchone()
+        return int(row["count"])
+
+    def feedback_metrics(self, since_ts: float | None = None) -> dict[str, Any]:
+        query = "SELECT outcome, predicted_label, true_label, risk_score FROM feedback_labels"
+        params: list[Any] = []
+        if since_ts is not None:
+            query += " WHERE created_at >= ?"
+            params.append(since_ts)
+        rows = self.conn.execute(query, params).fetchall()
+        tp = fp = tn = fn = 0
+        absolute_errors: list[float] = []
+        for row in rows:
+            predicted = int(row["predicted_label"])
+            actual = int(row["true_label"])
+            if predicted == 1 and actual == 1:
+                tp += 1
+            elif predicted == 1 and actual == 0:
+                fp += 1
+            elif predicted == 0 and actual == 0:
+                tn += 1
+            elif predicted == 0 and actual == 1:
+                fn += 1
+            if row["risk_score"] is not None:
+                absolute_errors.append(abs(float(row["risk_score"]) - float(actual)))
+        precision = _safe_divide(tp, tp + fp)
+        recall = _safe_divide(tp, tp + fn)
+        specificity = _safe_divide(tn, tn + fp)
+        accuracy = _safe_divide(tp + tn, tp + fp + tn + fn)
+        false_positive_rate = _safe_divide(fp, fp + tn)
+        false_negative_rate = _safe_divide(fn, fn + tp)
+        f1 = _safe_divide(2 * precision * recall, precision + recall)
+        return {
+            "label_count": len(rows),
+            "confusion_matrix": {
+                "true_positive": tp,
+                "true_negative": tn,
+                "false_positive": fp,
+                "false_negative": fn,
+            },
+            "metrics": {
+                "accuracy": accuracy,
+                "precision": precision,
+                "recall": recall,
+                "specificity": specificity,
+                "false_positive_rate": false_positive_rate,
+                "false_negative_rate": false_negative_rate,
+                "f1": f1,
+                "mean_absolute_error": sum(absolute_errors) / len(absolute_errors) if absolute_errors else None,
+            },
+        }
 
     def append_federation_export(self, signal_type: str, payload: dict[str, Any]) -> None:
         with self._lock, self.conn:
@@ -813,3 +940,32 @@ def _safe_indicator_metadata(metadata: dict[str, Any]) -> dict[str, Any]:
         elif isinstance(value, dict):
             safe[f"{key}_keys"] = sorted(str(item) for item in value.keys())[:20]
     return safe
+
+
+def normalize_feedback_outcome(outcome: str) -> tuple[int, int] | None:
+    normalized = outcome.strip().lower().replace("-", "_").replace(" ", "_")
+    mapping = {
+        "tp": (1, 1),
+        "true_positive": (1, 1),
+        "tn": (0, 0),
+        "true_negative": (0, 0),
+        "fp": (1, 0),
+        "false_positive": (1, 0),
+        "fn": (0, 1),
+        "false_negative": (0, 1),
+    }
+    return mapping.get(normalized)
+
+
+def canonical_feedback_outcome(predicted_label: int, true_label: int) -> str:
+    if predicted_label == 1 and true_label == 1:
+        return "true_positive"
+    if predicted_label == 0 and true_label == 0:
+        return "true_negative"
+    if predicted_label == 1 and true_label == 0:
+        return "false_positive"
+    return "false_negative"
+
+
+def _safe_divide(numerator: float, denominator: float) -> float:
+    return numerator / denominator if denominator else 0.0

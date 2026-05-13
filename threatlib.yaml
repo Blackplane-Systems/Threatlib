@@ -197,3 +197,14 @@ threatlib:
     enabled: true
     retention_days: 30
     allowed_remote_feeds: ["tor_exit_nodes", "urlhaus_recent"]
+
+  fast_deploy:
+    enabled: false
+    observation_hours: 24
+    min_scores: 25
+    min_labels: 10
+    max_false_positive_rate: 0.10
+    max_false_negative_rate: 0.35
+    min_precision: 0.70
+    min_recall: 0.60
+    active_action_cap: "soft_restrict"

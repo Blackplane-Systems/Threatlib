@@ -136,6 +136,13 @@ Train the compact public baseline model artifact:
 threatlib-train-base-model --tranco "<path-to>/top-1m.csv" --facebook "<path-to>/facebook_combined.txt" --sms "<path-to>/sms+spam+collection" --output threatlib/models/base_model.json
 ```
 
+Submit confirmed outcomes during shadow review:
+
+```bash
+threatlib-feedback --api-url http://127.0.0.1:8000 --account-id acct_123 --outcome true_positive --source reviewer
+threatlib-feedback --api-url http://127.0.0.1:8000 --account-id acct_456 --outcome false_positive --risk-score 0.82 --source appeal
+```
+
 Refresh live indicator feeds:
 
 ```bash
@@ -160,9 +167,12 @@ The FastAPI service provides:
 - `POST /event` for ongoing event ingestion
 - `POST /report` for abuse reports
 - `POST /appeal` for appeal submission
+- `POST /feedback` for confirmed `true_positive`, `true_negative`, `false_positive`, and `false_negative` labels
 - `GET /account/{account_id}` for privacy-safe account state
 - `GET /health` for service status
 - `GET /metrics` for operational counters
+- `GET /metrics/model` for confusion matrix, precision, recall, FPR, FNR, F1, and calibration error
+- `GET /deployment/fast-status` for fast-deploy readiness checks
 - `GET /graph` for graph and community visibility
 
 ## Configuration
@@ -185,6 +195,7 @@ The default policy lives in `threatlib.yaml`. Important sections include:
 - `network_isolation`
 - `persistent_homology`
 - `canary`
+- `fast_deploy`
 
 ## Repository Map
 
@@ -219,6 +230,22 @@ ThreatLib can ingest public calibration data and live abuse indicators without s
 - Hashed indicators and derived feature rows expire by default after `30` days and can be removed with `threatlib-import-intel --prune-expired`.
 
 The repository includes `threatlib/models/base_model.json`, a compact baseline trained from the local Tranco, SNAP ego-Facebook, and UCI SMS Spam files. It stores source hashes, aggregate domain and graph statistics, numeric SMS classifier coefficients, scaler parameters, and validation metrics. It does not store raw dataset rows, raw SMS messages, raw URLs, raw graph edges, or full domain lists.
+
+## Feedback and Fast Deployment
+
+Developers can feed confirmed outcomes from day one using `POST /feedback` or the `threatlib-feedback` CLI. Accepted outcomes are `true_positive`, `true_negative`, `false_positive`, and `false_negative`, with shorthand aliases `tp`, `tn`, `fp`, and `fn`.
+
+Feedback labels update the calibration label store when a risk score is available. Operator notes are hashed before storage. The `/metrics/model` endpoint exposes the current confusion matrix and performance metrics so teams can see whether the system is improving or drifting.
+
+Fast deploy mode is configured under `fast_deploy` in `threatlib.yaml`. It is disabled by default and never overrides `shadow_mode`. Once an operator deliberately disables shadow mode, fast deploy can allow limited active enforcement after one day of observation if these guardrails pass:
+
+- enough scored accounts
+- enough confirmed labels
+- acceptable false-positive and false-negative rates
+- minimum precision and recall
+- active action cap, defaulting to `soft_restrict`
+
+If fast deploy is enabled but guardrails are not met, actions remain `monitor`. If guardrails pass, active actions are capped so early deployment does not jump directly to severe enforcement.
 
 ## Testing
 

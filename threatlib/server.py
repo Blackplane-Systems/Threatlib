@@ -13,6 +13,7 @@ import uvicorn
 from threatlib.config.policy import Policy, PolicyLoader
 from threatlib.adapters import AdapterRegistry
 from threatlib.graph.account_graph import AccountGraph, hash_value
+from threatlib.risk.feedback import fast_deploy_status, model_metrics
 from threatlib.risk.synthesis import RiskSynthesizer
 
 
@@ -37,6 +38,16 @@ class AppealRequest(BaseModel):
     appeal_text: str = ""
 
 
+class FeedbackRequest(BaseModel):
+    account_id: str
+    outcome: str
+    source: str = "manual"
+    risk_score: float | None = Field(default=None, ge=0.0, le=1.0)
+    threshold: float | None = Field(default=None, ge=0.0, le=1.0)
+    notes: str | None = None
+    timestamp: float | None = None
+
+
 def create_app(
     config_path: str = "threatlib.yaml",
     policy: Policy | None = None,
@@ -47,7 +58,7 @@ def create_app(
     store = graph or AccountGraph(loaded_policy.graph_db_path())
     synthesizer = RiskSynthesizer(loaded_policy, graph=store)
     adapter = AdapterRegistry.from_policy(loaded_policy)
-    metrics = {"request_count": 0, "score_count": 0, "event_count": 0, "report_count": 0}
+    metrics = {"request_count": 0, "score_count": 0, "event_count": 0, "report_count": 0, "feedback_count": 0}
 
     @app.middleware("http")
     async def count_requests(request, call_next):  # type: ignore[no-untyped-def]
@@ -110,6 +121,29 @@ def create_app(
             )
         return {"status": "ok", "appeal_opened": True}
 
+    @app.post("/feedback")
+    async def feedback(payload: FeedbackRequest) -> dict[str, Any]:
+        metrics["feedback_count"] += 1
+        risk_score = payload.risk_score
+        if risk_score is None:
+            risk_score = store.latest_risk_score(payload.account_id)
+        threshold = payload.threshold
+        if threshold is None:
+            threshold = loaded_policy.action_thresholds.get("soft_restrict", 0.65)
+        try:
+            label = store.record_feedback_label(
+                account_id=payload.account_id,
+                outcome=payload.outcome,
+                source=payload.source,
+                risk_score=risk_score,
+                threshold=threshold,
+                notes=payload.notes,
+                created_at=payload.timestamp,
+            )
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        return {"status": "ok", "label": label, "model_metrics": store.feedback_metrics()}
+
     @app.get("/account/{account_id}")
     async def account(account_id: str) -> dict[str, Any]:
         row = store.get_account(account_id)
@@ -135,7 +169,21 @@ def create_app(
 
     @app.get("/metrics")
     async def metrics_endpoint() -> dict[str, Any]:
-        return {**metrics, "account_count": store.account_count(), "audit_count": store.audit_count()}
+        return {
+            **metrics,
+            "account_count": store.account_count(),
+            "audit_count": store.audit_count(),
+            "stored_feedback_count": store.feedback_count(),
+            "model_metrics": store.feedback_metrics(),
+        }
+
+    @app.get("/metrics/model")
+    async def model_metrics_endpoint(since_hours: float | None = None) -> dict[str, Any]:
+        return model_metrics(store, since_hours)
+
+    @app.get("/deployment/fast-status")
+    async def fast_status() -> dict[str, Any]:
+        return fast_deploy_status(loaded_policy, store)
 
     @app.get("/graph")
     async def graph_endpoint() -> dict[str, Any]:

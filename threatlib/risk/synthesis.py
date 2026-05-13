@@ -16,6 +16,7 @@ from threatlib.fusion.dempster_shafer import (
 )
 from threatlib.graph.account_graph import AccountGraph
 from threatlib.risk.conformal import ConformalPredictor
+from threatlib.risk.feedback import apply_fast_deploy_action_policy
 from threatlib.signals.base import DetectorResult
 from threatlib.signals.behavioral_timing import BehavioralTimingDetector
 from threatlib.signals.content_signal import ContentSignalDetector
@@ -111,6 +112,7 @@ class RiskSynthesizer:
         if coordinated and coordinated.fraud_mass > 0.5:
             threat_tier = "tier_3_cluster"
         action = compute_action(jittered_score, self.policy) if has_quorum else "monitor"
+        action = apply_fast_deploy_action_policy(action, self.policy, self.graph)
         if emergency_action:
             action = emergency_action
             threat_tier = "emergency_escalation"
