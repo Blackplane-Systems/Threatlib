@@ -28,6 +28,8 @@ class IPNetworkDetector(BaseDetector):
             lrs.append((8.0, "Tor exit node"))  # REF: Section D.6 - Tor registration LR.
         elif account_data.get("ip_is_tor") is False:
             lrs.append((0.9, "not Tor"))  # REF: Section D.6 - weak normal-use evidence.
+        elif self.graph and self.graph.threat_indicator_exists("tor_exit_ip_prefix", str(account_data["ip_prefix"])):
+            lrs.append((4.0, "Tor exit prefix from threat-intel cache"))  # REF: Public Tor feed prefix match is weaker than exact IP reputation.
 
         if account_data.get("ip_is_vpn") is True and account_data.get("ip_is_datacenter") is True:
             lrs.append((10.0, "VPN through datacenter"))  # REF: Section D.6 - combined VPN/datacenter LR.
@@ -67,4 +69,3 @@ class IPNetworkDetector(BaseDetector):
             combination_rule=result.combination_rule,
             conflict_k=result.conflict_k,
         )
-

@@ -46,6 +46,8 @@ class ContentSignalDetector(BaseDetector):
             concentration = most_common / len(domains)
             if concentration > 0.80:
                 lrs.append((8.0, "external links concentrated on one domain"))  # REF: Section D.12 - redirect campaign LR.
+            if self.graph and any(self.graph.threat_indicator_exists("urlhaus_host", domain.lower()) for domain in domains):
+                lrs.append((12.0, "external link host matched threat-intel cache"))  # REF: URLhaus curated malicious URL intelligence.
 
         query = str(account_data.get("first_search_query") or "").lower()
         sensitive_terms = [str(item).lower() for item in getattr(self.policy, "topic_sensitivity_list", []) or []]

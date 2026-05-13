@@ -50,6 +50,8 @@ class ExternalLinkPatternDetector(BaseDetector):
                 lrs.append((3.0, "URL shortener use"))  # REF: v2 C.1.3 - shortener weak LR.
             if _domain_account_count(self.graph, domains[0]) > 10:
                 lrs.append((8.0, "shared link domain campaign"))  # REF: v2 C.1.3 - >10 accounts per domain.
+            if any(self.graph.threat_indicator_exists("urlhaus_host", domain) for domain in domains):
+                lrs.append((12.0, "domain matched URLhaus threat-intel cache"))  # REF: URLhaus is curated malicious URL intelligence.
         if giveaway_present:
             lrs.append((4.0, "giveaway language present"))  # REF: v2 C.1.3 - giveaway language LR.
         if not lrs:
@@ -73,4 +75,3 @@ def _domain_account_count(graph: Any, domain: str) -> int:
         if str(data.get("link_domain") or data.get("domain") or "").lower() == domain:
             accounts.add(event["account_id"])
     return len(accounts)
-

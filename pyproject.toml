@@ -29,6 +29,11 @@ dependencies = [
 [project.scripts]
 threatlib-server = "threatlib.server:main"
 threatlib-dashboard = "threatlib.dashboard.app:main"
+threatlib-import-intel = "threatlib.intel.cli:main"
+threatlib-train-base-model = "threatlib.pretrain.cli:main"
+
+[tool.setuptools.package-data]
+threatlib = ["models/*.json", "models/README.md"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

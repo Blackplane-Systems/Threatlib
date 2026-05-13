@@ -1,0 +1,327 @@
+{
+  "contains_raw_training_data": false,
+  "domain_rank_baseline": {
+    "domain_entropy": {
+      "count": 1000000,
+      "max": 4.832923,
+      "mean": 3.243645,
+      "min": 0.591673,
+      "std": 0.340042
+    },
+    "domain_length": {
+      "count": 1000000,
+      "max": 75.0,
+      "mean": 13.852135,
+      "min": 4.0,
+      "std": 4.352848
+    },
+    "rank_buckets": {
+      "top_100k": 90000,
+      "top_10k": 9000,
+      "top_1k": 1000,
+      "top_1m": 900000
+    },
+    "rows_used": 1000000,
+    "top_tlds": [
+      {
+        "count": 422676,
+        "tld": "com"
+      },
+      {
+        "count": 49630,
+        "tld": "net"
+      },
+      {
+        "count": 38390,
+        "tld": "ru"
+      },
+      {
+        "count": 37625,
+        "tld": "org"
+      },
+      {
+        "count": 30780,
+        "tld": "uk"
+      },
+      {
+        "count": 30453,
+        "tld": "de"
+      },
+      {
+        "count": 18027,
+        "tld": "br"
+      },
+      {
+        "count": 16419,
+        "tld": "jp"
+      },
+      {
+        "count": 12518,
+        "tld": "in"
+      },
+      {
+        "count": 12281,
+        "tld": "nl"
+      },
+      {
+        "count": 11742,
+        "tld": "fr"
+      },
+      {
+        "count": 10357,
+        "tld": "io"
+      },
+      {
+        "count": 9943,
+        "tld": "it"
+      },
+      {
+        "count": 9132,
+        "tld": "cn"
+      },
+      {
+        "count": 9011,
+        "tld": "xyz"
+      },
+      {
+        "count": 8865,
+        "tld": "pl"
+      },
+      {
+        "count": 8244,
+        "tld": "us"
+      },
+      {
+        "count": 8077,
+        "tld": "ca"
+      },
+      {
+        "count": 8056,
+        "tld": "top"
+      },
+      {
+        "count": 7828,
+        "tld": "au"
+      },
+      {
+        "count": 7173,
+        "tld": "co"
+      },
+      {
+        "count": 5620,
+        "tld": "es"
+      },
+      {
+        "count": 5088,
+        "tld": "info"
+      },
+      {
+        "count": 5055,
+        "tld": "eu"
+      },
+      {
+        "count": 4885,
+        "tld": "ua"
+      },
+      {
+        "count": 4864,
+        "tld": "cz"
+      },
+      {
+        "count": 4749,
+        "tld": "id"
+      },
+      {
+        "count": 4651,
+        "tld": "online"
+      },
+      {
+        "count": 4521,
+        "tld": "kr"
+      },
+      {
+        "count": 4496,
+        "tld": "shop"
+      },
+      {
+        "count": 4015,
+        "tld": "cc"
+      },
+      {
+        "count": 3858,
+        "tld": "ro"
+      },
+      {
+        "count": 3815,
+        "tld": "se"
+      },
+      {
+        "count": 3772,
+        "tld": "app"
+      },
+      {
+        "count": 3701,
+        "tld": "site"
+      },
+      {
+        "count": 3455,
+        "tld": "ch"
+      },
+      {
+        "count": 3451,
+        "tld": "be"
+      },
+      {
+        "count": 3359,
+        "tld": "mx"
+      },
+      {
+        "count": 3312,
+        "tld": "ar"
+      },
+      {
+        "count": 3293,
+        "tld": "gr"
+      },
+      {
+        "count": 3258,
+        "tld": "ai"
+      },
+      {
+        "count": 3208,
+        "tld": "tr"
+      },
+      {
+        "count": 3060,
+        "tld": "me"
+      },
+      {
+        "count": 3021,
+        "tld": "casino"
+      },
+      {
+        "count": 2975,
+        "tld": "at"
+      },
+      {
+        "count": 2959,
+        "tld": "edu"
+      },
+      {
+        "count": 2938,
+        "tld": "vn"
+      },
+      {
+        "count": 2865,
+        "tld": "hu"
+      },
+      {
+        "count": 2758,
+        "tld": "pro"
+      },
+      {
+        "count": 2748,
+        "tld": "za"
+      }
+    ]
+  },
+  "graph_structure_baseline": {
+    "average_clustering": 0.6055467186200862,
+    "connected_components": 1,
+    "degree": {
+      "count": 4039,
+      "max": 1045.0,
+      "mean": 43.691013,
+      "min": 1.0,
+      "std": 52.414116
+    },
+    "density": 0.010819963503439287,
+    "edge_count": 88234,
+    "largest_component_nodes": 4039,
+    "node_count": 4039,
+    "rows_used": 88234,
+    "transitivity": 0.5191742775433075
+  },
+  "model_name": "threatlib_public_base_model",
+  "privacy": {
+    "stores_plaintext_malicious_indicators": false,
+    "stores_raw_domains": false,
+    "stores_raw_graph_edges": false,
+    "stores_raw_sms": false
+  },
+  "schema_version": 1,
+  "sms_spam_numeric_logistic": {
+    "coefficients": [
+      2.26108435,
+      -1.63845889,
+      0.76180668,
+      2.5336197,
+      0.06972877,
+      1.04132027,
+      0.27518303
+    ],
+    "decision_threshold": 0.5,
+    "feature_names": [
+      "length",
+      "token_count",
+      "url_count",
+      "digit_fraction",
+      "uppercase_fraction",
+      "urgency_term_count",
+      "exclamation_count"
+    ],
+    "holdout_metrics": {
+      "accuracy": 0.963415,
+      "f1": 0.870229,
+      "precision": 0.830097,
+      "recall": 0.914439,
+      "roc_auc": 0.98724,
+      "test_size": 0.25
+    },
+    "intercept": -1.47134999,
+    "label_counts": {
+      "ham": 4827,
+      "spam": 747
+    },
+    "model_type": "standardized_numeric_logistic_regression",
+    "negative_label": "ham",
+    "positive_label": "spam",
+    "rows_used": 5574,
+    "scaler_mean": [
+      81.39976077,
+      15.5645933,
+      0.02296651,
+      0.01894669,
+      0.06310024,
+      0.27511962,
+      0.25454545
+    ],
+    "scaler_scale": [
+      58.54378601,
+      11.05083469,
+      0.167871,
+      0.0482013,
+      0.10473544,
+      0.67943342,
+      0.70459253
+    ]
+  },
+  "sources": {
+    "snap_ego_facebook": {
+      "byte_count": 854362,
+      "line_count": 88234,
+      "sha256": "f41c026ed8af3cc3359f1ca5573d0605fb09ae0eefa34544b820fd8c6e2ef296"
+    },
+    "tranco_top_domains": {
+      "byte_count": 22741031,
+      "line_count": 1000000,
+      "sha256": "d3e1bb1f229e6a74be33ee3a8cf45addfc21654704f6e10eb9fa4ff266fccebe"
+    },
+    "uci_sms_spam": {
+      "byte_count": 477907,
+      "line_count": 5574,
+      "sha256": "7d039a24a6083ed9ef0f806ebad56bbb976e3aeb8de05669173bfdc4996c239d"
+    }
+  },
+  "trained_at": "2026-05-13T09:00:03.341566+00:00"
+}

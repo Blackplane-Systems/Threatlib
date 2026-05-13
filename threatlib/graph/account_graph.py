@@ -176,6 +176,40 @@ class AccountGraph:
                     created_at REAL NOT NULL
                 );
 
+                CREATE TABLE IF NOT EXISTS threat_indicators (
+                    indicator_type TEXT NOT NULL,
+                    indicator_hash TEXT NOT NULL,
+                    source TEXT NOT NULL,
+                    first_seen REAL NOT NULL,
+                    last_seen REAL NOT NULL,
+                    expires_at REAL NOT NULL,
+                    metadata_json TEXT NOT NULL,
+                    PRIMARY KEY (indicator_type, indicator_hash, source)
+                );
+
+                CREATE INDEX IF NOT EXISTS idx_threat_indicators_lookup
+                ON threat_indicators(indicator_type, indicator_hash, expires_at);
+
+                CREATE TABLE IF NOT EXISTS training_feature_rows (
+                    feature_hash TEXT NOT NULL,
+                    source TEXT NOT NULL,
+                    label TEXT NOT NULL,
+                    feature_json TEXT NOT NULL,
+                    created_at REAL NOT NULL,
+                    expires_at REAL NOT NULL,
+                    PRIMARY KEY (feature_hash, source)
+                );
+
+                CREATE TABLE IF NOT EXISTS dataset_imports (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    source TEXT NOT NULL,
+                    source_uri_hash TEXT NOT NULL,
+                    rows_seen INTEGER NOT NULL,
+                    rows_stored INTEGER NOT NULL,
+                    source_sha256 TEXT NOT NULL,
+                    imported_at REAL NOT NULL
+                );
+
                 CREATE TRIGGER IF NOT EXISTS audit_log_no_update
                 BEFORE UPDATE ON audit_log
                 BEGIN
@@ -612,3 +646,170 @@ class AccountGraph:
                 "INSERT INTO federation_exports(signal_type, payload_json, created_at) VALUES (?, ?, ?)",
                 (signal_type, json.dumps(payload, sort_keys=True), time.time()),
             )
+
+    def upsert_threat_indicator(
+        self,
+        indicator_type: str,
+        canonical_value: str,
+        source: str,
+        retention_days: float,
+        metadata: dict[str, Any] | None = None,
+        timestamp: float | None = None,
+    ) -> str:
+        ts = timestamp if timestamp is not None else time.time()
+        ttl_seconds = retention_days * ONE_DAY_SECONDS
+        indicator_hash = hash_value(canonical_value)
+        safe_metadata = _safe_indicator_metadata(metadata or {})
+        with self._lock, self.conn:
+            self.conn.execute(
+                """
+                INSERT INTO threat_indicators(
+                    indicator_type, indicator_hash, source, first_seen, last_seen, expires_at, metadata_json
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(indicator_type, indicator_hash, source) DO UPDATE SET
+                    last_seen = excluded.last_seen,
+                    expires_at = excluded.expires_at,
+                    metadata_json = excluded.metadata_json
+                """,
+                (
+                    indicator_type,
+                    indicator_hash,
+                    source,
+                    ts,
+                    ts,
+                    ts + ttl_seconds,
+                    json.dumps(safe_metadata, sort_keys=True),
+                ),
+            )
+        return indicator_hash
+
+    def threat_indicator_exists(
+        self,
+        indicator_type: str,
+        canonical_value: str,
+        source: str | None = None,
+        timestamp: float | None = None,
+    ) -> bool:
+        ts = timestamp if timestamp is not None else time.time()
+        indicator_hash = hash_value(canonical_value)
+        query = """
+            SELECT 1 FROM threat_indicators
+            WHERE indicator_type = ? AND indicator_hash = ? AND expires_at >= ?
+        """
+        params: list[Any] = [indicator_type, indicator_hash, ts]
+        if source is not None:
+            query += " AND source = ?"
+            params.append(source)
+        row = self.conn.execute(query, params).fetchone()
+        return row is not None
+
+    def threat_indicator_count(self, indicator_type: str | None = None) -> int:
+        if indicator_type is None:
+            row = self.conn.execute("SELECT COUNT(*) AS count FROM threat_indicators").fetchone()
+        else:
+            row = self.conn.execute(
+                "SELECT COUNT(*) AS count FROM threat_indicators WHERE indicator_type = ?",
+                (indicator_type,),
+            ).fetchone()
+        return int(row["count"])
+
+    def upsert_training_feature(
+        self,
+        source: str,
+        label: str,
+        feature_key: str,
+        features: dict[str, Any],
+        retention_days: float,
+        timestamp: float | None = None,
+    ) -> str:
+        ts = timestamp if timestamp is not None else time.time()
+        feature_hash = hash_value(feature_key)
+        safe_features = _safe_indicator_metadata(features)
+        with self._lock, self.conn:
+            self.conn.execute(
+                """
+                INSERT INTO training_feature_rows(feature_hash, source, label, feature_json, created_at, expires_at)
+                VALUES (?, ?, ?, ?, ?, ?)
+                ON CONFLICT(feature_hash, source) DO UPDATE SET
+                    label = excluded.label,
+                    feature_json = excluded.feature_json,
+                    expires_at = excluded.expires_at
+                """,
+                (
+                    feature_hash,
+                    source,
+                    label,
+                    json.dumps(safe_features, sort_keys=True),
+                    ts,
+                    ts + retention_days * ONE_DAY_SECONDS,
+                ),
+            )
+        return feature_hash
+
+    def training_feature_count(self, source: str | None = None) -> int:
+        if source is None:
+            row = self.conn.execute("SELECT COUNT(*) AS count FROM training_feature_rows").fetchone()
+        else:
+            row = self.conn.execute(
+                "SELECT COUNT(*) AS count FROM training_feature_rows WHERE source = ?",
+                (source,),
+            ).fetchone()
+        return int(row["count"])
+
+    def record_dataset_import(
+        self,
+        source: str,
+        source_uri: str,
+        rows_seen: int,
+        rows_stored: int,
+        source_sha256: str,
+        timestamp: float | None = None,
+    ) -> None:
+        ts = timestamp if timestamp is not None else time.time()
+        with self._lock, self.conn:
+            self.conn.execute(
+                """
+                INSERT INTO dataset_imports(source, source_uri_hash, rows_seen, rows_stored, source_sha256, imported_at)
+                VALUES (?, ?, ?, ?, ?, ?)
+                """,
+                (source, hash_value(source_uri), rows_seen, rows_stored, source_sha256, ts),
+            )
+
+    def prune_expired_intel(self, timestamp: float | None = None) -> int:
+        ts = timestamp if timestamp is not None else time.time()
+        with self._lock, self.conn:
+            indicator_count = self.conn.execute(
+                "SELECT COUNT(*) AS count FROM threat_indicators WHERE expires_at < ?",
+                (ts,),
+            ).fetchone()["count"]
+            feature_count = self.conn.execute(
+                "SELECT COUNT(*) AS count FROM training_feature_rows WHERE expires_at < ?",
+                (ts,),
+            ).fetchone()["count"]
+            self.conn.execute("DELETE FROM threat_indicators WHERE expires_at < ?", (ts,))
+            self.conn.execute("DELETE FROM training_feature_rows WHERE expires_at < ?", (ts,))
+        return int(indicator_count) + int(feature_count)
+
+
+def _safe_indicator_metadata(metadata: dict[str, Any]) -> dict[str, Any]:
+    safe: dict[str, Any] = {}
+    blocked_tokens = ("url", "ip", "domain", "email", "username", "message", "text", "content")
+    for key, value in metadata.items():
+        lowered = key.lower()
+        if any(token in lowered for token in blocked_tokens):
+            if isinstance(value, str):
+                safe[f"{key}_sha256"] = hash_value(value)
+                safe[f"{key}_length"] = len(value)
+            elif isinstance(value, list):
+                safe[f"{key}_count"] = len(value)
+            continue
+        if isinstance(value, bool) or isinstance(value, (int, float)):
+            safe[key] = value
+        elif isinstance(value, str):
+            safe[key] = value[:128]
+        elif isinstance(value, list):
+            safe[f"{key}_count"] = len(value)
+        elif isinstance(value, dict):
+            safe[f"{key}_keys"] = sorted(str(item) for item in value.keys())[:20]
+    return safe

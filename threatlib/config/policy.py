@@ -184,6 +184,14 @@ class CanaryConfig(BaseModel):
     alert_threshold: float = Field(default=0.50, ge=0.0, le=1.0)
 
 
+class ThreatIntelConfig(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    enabled: bool = True
+    retention_days: float = Field(default=30.0, ge=1.0, le=90.0)  # REF: Operator requirement - retain hashed abuse data for 20-30 days.
+    allowed_remote_feeds: list[str] = Field(default_factory=lambda: ["tor_exit_nodes", "urlhaus_recent"])
+
+
 class Policy(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -241,6 +249,7 @@ class Policy(BaseModel):
     network_isolation: NetworkIsolationConfig = Field(default_factory=NetworkIsolationConfig)
     persistent_homology: PersistentHomologyConfig = Field(default_factory=PersistentHomologyConfig)
     canary: CanaryConfig = Field(default_factory=CanaryConfig)
+    threat_intel: ThreatIntelConfig = Field(default_factory=ThreatIntelConfig)
 
     @model_validator(mode="after")
     def validate_thresholds(self) -> "Policy":
