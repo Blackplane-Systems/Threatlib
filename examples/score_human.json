@@ -1,0 +1,43 @@
+{
+  "account_id": "demo_human_account",
+  "email_domain": "gmail.com",
+  "email_domain_age_days": 9000,
+  "username_raw": "mira_dev",
+  "ip_prefix": "203.0.113",
+  "ip_is_vpn": false,
+  "ip_is_tor": false,
+  "ip_is_datacenter": false,
+  "ip_geo_country": "US",
+  "device_hash": "demo_human_device",
+  "device_platform": "android",
+  "device_user_agent": "Mozilla/5.0 Android Chrome",
+  "device_timezone": "America/New_York",
+  "device_screen_width": 1080,
+  "device_screen_height": 2400,
+  "device_language": "en-US",
+  "device_sensor_count": 12,
+  "device_imu_variance_x": 0.012,
+  "device_imu_variance_y": 0.018,
+  "device_imu_variance_z": 0.015,
+  "device_screen_on": true,
+  "timing_field_intervals": {
+    "email": [130, 170, 210, 90, 260, 150],
+    "username": [180, 240, 150, 310, 210, 120]
+  },
+  "timing_paste_events": {
+    "email": false,
+    "username": false
+  },
+  "timing_install_to_first_action_s": 120,
+  "timing_registration_duration_s": 95,
+  "first_search_query": "photography tips",
+  "first_action_type": "view_profile",
+  "metadata": {
+    "external_link_density": 0.0,
+    "external_link_domains": [],
+    "content_posted_count": 1,
+    "content_consumed_count": 12,
+    "distinct_dm_recipients_24h": 2,
+    "url_shorteners_used": []
+  }
+}

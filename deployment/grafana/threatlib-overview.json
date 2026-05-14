@@ -1,0 +1,27 @@
+{
+  "title": "ThreatLib Overview",
+  "schemaVersion": 39,
+  "version": 1,
+  "panels": [
+    {
+      "title": "API Requests",
+      "type": "timeseries",
+      "targets": [{"expr": "rate(threatlib_requests_total[5m])"}]
+    },
+    {
+      "title": "Scores",
+      "type": "timeseries",
+      "targets": [{"expr": "rate(threatlib_scores_total[5m])"}]
+    },
+    {
+      "title": "Audit Events",
+      "type": "stat",
+      "targets": [{"expr": "threatlib_audit_events"}]
+    },
+    {
+      "title": "Replay Quorum Rate",
+      "type": "gauge",
+      "targets": [{"expr": "threatlib_replay_quorum_met_rate"}]
+    }
+  ]
+}

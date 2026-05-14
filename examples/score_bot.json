@@ -1,0 +1,43 @@
+{
+  "account_id": "demo_bot_account",
+  "email_domain": "xq9zbot.xyz",
+  "email_domain_age_days": 3,
+  "username_raw": "aaaaaa9999",
+  "ip_prefix": "198.51.100",
+  "ip_is_vpn": true,
+  "ip_is_tor": true,
+  "ip_is_datacenter": true,
+  "ip_geo_country": "US",
+  "device_hash": "demo_device_farm",
+  "device_platform": "android",
+  "device_user_agent": "python-requests/2.31",
+  "device_timezone": "Asia/Shanghai",
+  "device_screen_width": 0,
+  "device_screen_height": 0,
+  "device_language": "zh-CN",
+  "device_sensor_count": 0,
+  "device_imu_variance_x": 0.00001,
+  "device_imu_variance_y": 0.00001,
+  "device_imu_variance_z": 0.00001,
+  "device_screen_on": false,
+  "timing_field_intervals": {
+    "email": [100, 100, 100, 100, 100, 100],
+    "username": [40, 40, 40, 40, 40, 40]
+  },
+  "timing_paste_events": {
+    "email": true,
+    "username": true
+  },
+  "timing_install_to_first_action_s": 2,
+  "timing_registration_duration_s": 12,
+  "first_search_query": "free crypto giveaway",
+  "first_action_type": "send_dm",
+  "metadata": {
+    "external_link_density": 0.95,
+    "external_link_domains": ["scam.example", "scam.example"],
+    "content_posted_count": 20,
+    "content_consumed_count": 1,
+    "distinct_dm_recipients_24h": 35,
+    "url_shorteners_used": ["bit.ly"]
+  }
+}

@@ -1,0 +1,19 @@
+threatlib:
+  platform: "creator_platform"
+  platform_adapter: "youtube"
+  environment: "shadow_mode"
+  shadow_mode: true
+  attack_vectors:
+    enabled: ["AV-01", "AV-03", "AV-04", "AV-05", "AV-06", "AV-08", "AV-09", "AV-11", "AV-12", "AV-15"]
+    disabled: []
+  feature_restrictions:
+    view_content: { threshold: 0.90, steepness: 5.0 }
+    comment: { threshold: 0.35, steepness: 10.0 }
+    upload_content: { threshold: 0.45, steepness: 9.0 }
+    livestream: { threshold: 0.30, steepness: 12.0 }
+    share_external_link: { threshold: 0.30, steepness: 12.0 }
+  high_impact_actions:
+    - comment
+    - upload_content
+    - livestream
+    - share_external_link

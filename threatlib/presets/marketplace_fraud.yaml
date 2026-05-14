@@ -1,0 +1,19 @@
+threatlib:
+  platform: "marketplace_fraud"
+  platform_adapter: "marketplace"
+  environment: "shadow_mode"
+  shadow_mode: true
+  attack_vectors:
+    enabled: ["AV-01", "AV-03", "AV-05", "AV-06", "AV-07", "AV-10", "AV-11", "AV-12"]
+    disabled: []
+  feature_restrictions:
+    browse_listing: { threshold: 0.90, steepness: 5.0 }
+    contact_seller: { threshold: 0.40, steepness: 10.0 }
+    create_listing: { threshold: 0.35, steepness: 12.0 }
+    add_external_payment_link: { threshold: 0.25, steepness: 15.0 }
+    request_advance_payment: { threshold: 0.20, steepness: 15.0 }
+  high_impact_actions:
+    - create_listing
+    - contact_seller
+    - add_external_payment_link
+    - request_advance_payment

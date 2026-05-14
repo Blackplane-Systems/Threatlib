@@ -1,0 +1,21 @@
+threatlib:
+  platform: "social_spam"
+  platform_adapter: "social_network"
+  environment: "shadow_mode"
+  shadow_mode: true
+  attack_vectors:
+    enabled: ["AV-01", "AV-03", "AV-04", "AV-05", "AV-06", "AV-08", "AV-09", "AV-11", "AV-12", "AV-15"]
+    disabled: []
+  feature_restrictions:
+    read_content: { threshold: 0.90, steepness: 5.0 }
+    search: { threshold: 0.85, steepness: 5.0 }
+    post_content: { threshold: 0.50, steepness: 8.0 }
+    send_dm: { threshold: 0.35, steepness: 10.0 }
+    share_content: { threshold: 0.40, steepness: 9.0 }
+    create_group: { threshold: 0.25, steepness: 12.0 }
+    mass_invite: { threshold: 0.15, steepness: 15.0 }
+  high_impact_actions:
+    - send_dm
+    - create_group
+    - broadcast_message
+    - share_external_link

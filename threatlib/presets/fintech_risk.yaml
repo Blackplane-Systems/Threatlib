@@ -1,0 +1,25 @@
+threatlib:
+  platform: "fintech_risk"
+  platform_adapter: "payment"
+  environment: "shadow_mode"
+  shadow_mode: true
+  attack_vectors:
+    enabled: ["AV-01", "AV-02", "AV-06", "AV-07", "AV-11", "AV-12", "AV-15"]
+    disabled: []
+  payment:
+    velocity_threshold: 20
+    variance_floor: 100
+    new_account_limit: 10000
+  feature_restrictions:
+    view_balance: { threshold: 0.90, steepness: 5.0 }
+    receive_payment: { threshold: 0.65, steepness: 7.0 }
+    request_money: { threshold: 0.40, steepness: 10.0 }
+    send_payment_small: { threshold: 0.50, steepness: 8.0 }
+    send_payment_large: { threshold: 0.35, steepness: 12.0 }
+    add_payee: { threshold: 0.30, steepness: 12.0 }
+    withdraw_bank: { threshold: 0.25, steepness: 15.0 }
+  high_impact_actions:
+    - initiate_payment
+    - add_payee
+    - withdraw_bank
+    - request_money

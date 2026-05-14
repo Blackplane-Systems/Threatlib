@@ -7,6 +7,8 @@ import json
 
 from threatlib.config.policy import PolicyLoader
 from threatlib.graph.account_graph import AccountGraph
+from threatlib.observability.metrics import detector_metrics, graph_metrics, replay_metrics
+from threatlib.replay import ReplayEngine
 from threatlib.risk.synthesis import RiskSynthesizer
 
 
@@ -25,6 +27,8 @@ def render(config_path: str = "threatlib.yaml") -> None:
             "Detector Health",
             "Account Graph",
             "Threshold Calibration",
+            "Replay Simulation",
+            "Operational Metrics",
             "Live Scoring",
         ],
     )
@@ -53,6 +57,22 @@ def render(config_path: str = "threatlib.yaml") -> None:
         st.title("Threshold Calibration")
         for feature, config in policy.feature_restrictions.items():
             st.slider(feature, 0.0, 1.0, float(config.threshold))
+    elif page == "Replay Simulation":
+        st.title("Replay Simulation")
+        payload = st.text_area("Replay JSON records", "[]")
+        deterministic = st.checkbox("Deterministic replay", value=True)
+        if st.button("Run Replay"):
+            records = json.loads(payload)
+            result = ReplayEngine(policy, deterministic=deterministic).replay(records)
+            st.json(result["summary"])
+            st.dataframe(result["timeline"])
+    elif page == "Operational Metrics":
+        st.title("Operational Metrics")
+        st.json(graph_metrics(graph))
+        st.subheader("Detector Health")
+        st.json(detector_metrics(graph))
+        st.subheader("Replay")
+        st.json(replay_metrics(None))
     else:
         st.title("Live Scoring")
         payload = st.text_area("Account JSON", "{}")

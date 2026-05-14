@@ -106,6 +106,14 @@ Formula references are maintained in the project formula index when present and 
 
 ## Quick Start
 
+Run the full local stack with Docker:
+
+```bash
+docker compose up --build
+```
+
+The API listens on `http://127.0.0.1:8000` and the dashboard listens on `http://127.0.0.1:8501`.
+
 Install the package in editable mode:
 
 ```bash
@@ -122,6 +130,20 @@ Run the dashboard:
 
 ```bash
 threatlib-dashboard --config threatlib.yaml
+```
+
+Replay the bundled demo records:
+
+```bash
+threatlib-replay --config threatlib.yaml --input examples/replay/demo.jsonl
+```
+
+Inspect and validate policy state:
+
+```bash
+threatlib-policy lint --config threatlib.yaml
+threatlib-policy explain --config threatlib.yaml
+threatlib-preset list
 ```
 
 Import public calibration and threat-intelligence datasets:
@@ -168,12 +190,38 @@ The FastAPI service provides:
 - `POST /report` for abuse reports
 - `POST /appeal` for appeal submission
 - `POST /feedback` for confirmed `true_positive`, `true_negative`, `false_positive`, and `false_negative` labels
+- `POST /replay` for deterministic policy and event replay simulation
 - `GET /account/{account_id}` for privacy-safe account state
 - `GET /health` for service status
 - `GET /metrics` for operational counters
 - `GET /metrics/model` for confusion matrix, precision, recall, FPR, FNR, F1, and calibration error
+- `GET /metrics/detectors` for detector activation and uncertainty health
+- `GET /metrics/replay` for the latest replay summary
+- `GET /metrics/prometheus` for Prometheus-compatible process and engine metrics
+- `GET /policy/active` for active policy metadata and hash
+- `GET /policy/lint` for deployment-safety warnings
+- `GET /presets` and `GET /presets/{name}` for deployment preset discovery
 - `GET /deployment/fast-status` for fast-deploy readiness checks
 - `GET /graph` for graph and community visibility
+
+## Replay and Policy Simulation
+
+Replay is a first-class operational path. By default, `POST /replay` and `threatlib-replay` run against an isolated in-memory graph, disable score jitter, and return deterministic score timelines without mutating production state. Operators can compare action distributions, quorum behavior, detector activations, uncertainty progression, and detector disagreement before changing thresholds.
+
+Supported replay inputs include JSON, JSONL, NDJSON, CSV, gzip-compressed files, and zip archives containing a supported replay file. Replay records can represent `score`, `event`, `report`, and `feedback` operations.
+
+## Deployment Presets
+
+ThreatLib includes composable presets for common rollout shapes:
+
+- `social_spam`
+- `marketplace_fraud`
+- `gaming_abuse`
+- `creator_platform`
+- `fintech_risk`
+- `messaging_safety`
+
+Presets are partial policy overlays. They configure adapters, attack-vector focus, feature restrictions, and high-impact actions while preserving the base policy's invariants. Operators can inspect and apply them with `threatlib-preset`.
 
 ## Configuration
 
@@ -206,6 +254,11 @@ The default policy lives in `threatlib.yaml`. Important sections include:
 - `threatlib/risk/conformal.py`: confidence bands
 - `threatlib/action/feature_restrictor.py`: action and restriction logic
 - `threatlib/adapters/`: platform adapters
+- `threatlib/replay/`: deterministic replay and policy simulation
+- `threatlib/presets/`: composable deployment presets
+- `threatlib/policy/`: policy hashing, linting, summaries, and diffs
+- `threatlib/observability/`: metrics and Prometheus export helpers
+- `threatlib/sdk/`: detector authoring harness
 - `threatlib/graph/account_graph.py`: SQLite persistence and graph helpers
 - `threatlib/intel/`: safe threat-intelligence importers and hashed retention
 - `threatlib/pretrain/`: public-dataset baseline model training
@@ -214,6 +267,10 @@ The default policy lives in `threatlib.yaml`. Important sections include:
 - `threatlib/dashboard/app.py`: Streamlit dashboard
 - `js-sdk/threatlib-timing.js`: browser timing collector
 - `android-sdk/threatlib-android/`: Android SDK sketch
+- `deployment/`: Kubernetes, Helm, and Grafana starter artifacts
+- `examples/`: scoring and replay examples
+- `schemas/`: versioned replay and policy overlay schemas
+- `docs/`: progressive operating guides
 - `tests/`: unit and integration tests
 
 ## Threat Intelligence Datasets

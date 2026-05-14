@@ -6,13 +6,17 @@ import argparse
 import time
 from typing import Any
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Response
 from pydantic import BaseModel, Field
 import uvicorn
 
 from threatlib.config.policy import Policy, PolicyLoader
 from threatlib.adapters import AdapterRegistry
 from threatlib.graph.account_graph import AccountGraph, hash_value
+from threatlib.observability.metrics import detector_metrics, prometheus_text, replay_metrics
+from threatlib.policy.versioning import lint_policy, policy_summary
+from threatlib.presets import list_presets, load_preset
+from threatlib.replay import ReplayEngine
 from threatlib.risk.feedback import fast_deploy_status, model_metrics
 from threatlib.risk.synthesis import RiskSynthesizer
 
@@ -48,6 +52,13 @@ class FeedbackRequest(BaseModel):
     timestamp: float | None = None
 
 
+class ReplayRequest(BaseModel):
+    records: list[dict[str, Any]]
+    deterministic: bool = True
+    shadow_mode: bool | None = None
+    persist: bool = False
+
+
 def create_app(
     config_path: str = "threatlib.yaml",
     policy: Policy | None = None,
@@ -59,6 +70,7 @@ def create_app(
     synthesizer = RiskSynthesizer(loaded_policy, graph=store)
     adapter = AdapterRegistry.from_policy(loaded_policy)
     metrics = {"request_count": 0, "score_count": 0, "event_count": 0, "report_count": 0, "feedback_count": 0}
+    last_replay: dict[str, Any] | None = None
 
     @app.middleware("http")
     async def count_requests(request, call_next):  # type: ignore[no-untyped-def]
@@ -144,6 +156,22 @@ def create_app(
             raise HTTPException(status_code=400, detail=str(exc)) from exc
         return {"status": "ok", "label": label, "model_metrics": store.feedback_metrics()}
 
+    @app.post("/replay")
+    async def replay(payload: ReplayRequest) -> dict[str, Any]:
+        nonlocal last_replay
+        replay_policy = loaded_policy.model_copy(deep=True)
+        if payload.shadow_mode is not None:
+            replay_policy.shadow_mode = payload.shadow_mode
+        replay_graph = store if payload.persist else AccountGraph(":memory:")
+        result = ReplayEngine(
+            replay_policy,
+            graph=replay_graph,
+            deterministic=payload.deterministic,
+        ).replay(payload.records)
+        last_replay = result
+        app.state.last_replay = result
+        return result
+
     @app.get("/account/{account_id}")
     async def account(account_id: str) -> dict[str, Any]:
         row = store.get_account(account_id)
@@ -177,9 +205,40 @@ def create_app(
             "model_metrics": store.feedback_metrics(),
         }
 
+    @app.get("/metrics/detectors")
+    async def detector_metrics_endpoint() -> dict[str, Any]:
+        return detector_metrics(store)
+
+    @app.get("/metrics/replay")
+    async def replay_metrics_endpoint() -> dict[str, Any]:
+        return replay_metrics(last_replay)
+
     @app.get("/metrics/model")
     async def model_metrics_endpoint(since_hours: float | None = None) -> dict[str, Any]:
         return model_metrics(store, since_hours)
+
+    @app.get("/metrics/prometheus")
+    async def prometheus_endpoint() -> Response:
+        return Response(prometheus_text(metrics, store, last_replay), media_type="text/plain; version=0.0.4")
+
+    @app.get("/policy/active")
+    async def active_policy_endpoint() -> dict[str, Any]:
+        return policy_summary(loaded_policy)
+
+    @app.get("/policy/lint")
+    async def policy_lint_endpoint() -> dict[str, Any]:
+        return lint_policy(loaded_policy)
+
+    @app.get("/presets")
+    async def presets_endpoint() -> dict[str, Any]:
+        return {"presets": list_presets()}
+
+    @app.get("/presets/{preset_name}")
+    async def preset_endpoint(preset_name: str) -> dict[str, Any]:
+        try:
+            return load_preset(preset_name)
+        except ValueError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
 
     @app.get("/deployment/fast-status")
     async def fast_status() -> dict[str, Any]:
@@ -212,6 +271,7 @@ def create_app(
     app.state.synthesizer = synthesizer
     app.state.metrics = metrics
     app.state.adapter = adapter
+    app.state.last_replay = last_replay
     return app
 
 

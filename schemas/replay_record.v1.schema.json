@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://blackplane.systems/threatlib/schemas/replay_record.v1.schema.json",
+  "title": "ThreatLib Replay Record v1",
+  "type": "object",
+  "required": ["type"],
+  "properties": {
+    "type": {
+      "type": "string",
+      "enum": ["score", "event", "report", "feedback"]
+    },
+    "account_data": {
+      "type": "object"
+    },
+    "account_id": {
+      "type": "string"
+    },
+    "event_type": {
+      "type": "string"
+    },
+    "event_data": {
+      "type": "object"
+    },
+    "session_id": {
+      "type": "string"
+    },
+    "timestamp": {
+      "type": "number"
+    },
+    "target_account_id": {
+      "type": "string"
+    },
+    "reporter_account_id": {
+      "type": "string"
+    },
+    "category": {
+      "type": "string"
+    },
+    "reporter_trust_score": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "outcome": {
+      "type": "string",
+      "enum": ["true_positive", "true_negative", "false_positive", "false_negative", "tp", "tn", "fp", "fn"]
+    },
+    "risk_score": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "threshold": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    }
+  },
+  "additionalProperties": true
+}

@@ -1,0 +1,18 @@
+threatlib:
+  platform: "gaming_abuse"
+  platform_adapter: "generic"
+  environment: "shadow_mode"
+  shadow_mode: true
+  attack_vectors:
+    enabled: ["AV-01", "AV-02", "AV-06", "AV-09", "AV-11", "AV-12", "AV-15"]
+    disabled: []
+  feature_restrictions:
+    play_match: { threshold: 0.85, steepness: 5.0 }
+    use_chat: { threshold: 0.40, steepness: 10.0 }
+    trade_item: { threshold: 0.35, steepness: 12.0 }
+    create_party: { threshold: 0.45, steepness: 8.0 }
+    report_player: { threshold: 0.60, steepness: 6.0 }
+  high_impact_actions:
+    - use_chat
+    - trade_item
+    - create_party

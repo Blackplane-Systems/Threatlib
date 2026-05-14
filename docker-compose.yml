@@ -1,0 +1,22 @@
+services:
+  api:
+    build: .
+    command: threatlib-server --config threatlib.yaml --host 0.0.0.0 --port 8000
+    ports:
+      - "8000:8000"
+    environment:
+      THREATLIB_CONFIG: threatlib.yaml
+
+  dashboard:
+    build: .
+    command: streamlit run threatlib/dashboard/app.py --server.address 0.0.0.0 --server.port 8501 -- --config threatlib.yaml
+    ports:
+      - "8501:8501"
+    depends_on:
+      - api
+
+  replay:
+    build: .
+    command: threatlib-replay --config threatlib.yaml --input examples/replay/demo.jsonl --output /tmp/threatlib-replay-output.json
+    depends_on:
+      - api

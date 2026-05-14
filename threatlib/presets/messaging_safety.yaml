@@ -1,0 +1,21 @@
+threatlib:
+  platform: "messaging_safety"
+  platform_adapter: "whatsapp"
+  environment: "shadow_mode"
+  shadow_mode: true
+  attack_vectors:
+    enabled: ["AV-01", "AV-02", "AV-04", "AV-05", "AV-06", "AV-08", "AV-09", "AV-11", "AV-12", "AV-14", "AV-15"]
+    disabled: []
+  feature_restrictions:
+    view_chat: { threshold: 0.90, steepness: 5.0 }
+    send_message: { threshold: 0.35, steepness: 10.0 }
+    forward_message: { threshold: 0.25, steepness: 12.0 }
+    create_group: { threshold: 0.20, steepness: 15.0 }
+    add_to_group: { threshold: 0.30, steepness: 12.0 }
+    share_link: { threshold: 0.35, steepness: 10.0 }
+    broadcast_message: { threshold: 0.15, steepness: 15.0 }
+  high_impact_actions:
+    - send_message
+    - forward_message
+    - create_group
+    - broadcast_message

@@ -15,6 +15,7 @@ from threatlib.fusion.dempster_shafer import (
     non_trivial_count,
 )
 from threatlib.graph.account_graph import AccountGraph
+from threatlib.policy.versioning import policy_hash
 from threatlib.risk.conformal import ConformalPredictor
 from threatlib.risk.feedback import apply_fast_deploy_action_policy
 from threatlib.signals.base import DetectorResult
@@ -119,6 +120,14 @@ class RiskSynthesizer:
         if self.policy.shadow_mode:
             action = "monitor"
             restrictions = {feature: 0.0 for feature in restrictions}
+        explainability = build_explainability(
+            adjusted_results,
+            combined,
+            has_quorum,
+            action,
+            threat_tier,
+            self.policy,
+        )
         audit_id = self.audit.log_score(
             account_id=account_data["account_id"],
             detector_results=adjusted_results,
@@ -142,6 +151,7 @@ class RiskSynthesizer:
                 "non_trivial_detectors": non_trivial_count(adjusted_results.values()),
                 "minimum_required": self.policy.minimum_detectors_required,
             },
+            "explainability": explainability,
             "audit_id": audit_id,
             "shadow_mode": self.policy.shadow_mode,
         }
@@ -190,3 +200,69 @@ def apply_jitter(risk_score: float, scale: float = 0.01, rng: random.Random | No
 
 def score_account(account_data: dict[str, Any], policy: Any, graph: AccountGraph | None = None) -> dict[str, Any]:
     return RiskSynthesizer(policy, graph=graph).score(account_data)
+
+
+def build_explainability(
+    results: dict[str, DetectorResult],
+    combined: DetectorResult,
+    quorum_met: bool,
+    action: str,
+    threat_tier: str,
+    policy: Any,
+) -> dict[str, Any]:
+    """Create a structured, non-PII explanation for score consumers."""
+
+    detector_rows = []
+    missing_inputs: dict[str, list[str]] = {}
+    for name, result in results.items():
+        detector_rows.append(
+            {
+                "detector": name,
+                "fraud_mass": result.fraud_mass,
+                "legitimate_mass": result.legitimate_mass,
+                "uncertainty_mass": result.uncertainty_mass,
+                "reason": result.reason,
+            }
+        )
+        missing = result.metadata.get("missing_fields") if isinstance(result.metadata, dict) else None
+        if missing:
+            missing_inputs[name] = list(missing)
+    top_fraud = sorted(detector_rows, key=lambda item: item["fraud_mass"], reverse=True)[:5]
+    top_legitimate = sorted(detector_rows, key=lambda item: item["legitimate_mass"], reverse=True)[:5]
+    uncertainty = sorted(detector_rows, key=lambda item: item["uncertainty_mass"], reverse=True)[:5]
+    conflict = [
+        item
+        for item in sorted(detector_rows, key=lambda row: min(row["fraud_mass"], row["legitimate_mass"]), reverse=True)
+        if item["fraud_mass"] > 0.0 or item["legitimate_mass"] > 0.0
+    ][:5]
+    return {
+        "top_fraud_contributors": top_fraud,
+        "top_legitimate_contributors": top_legitimate,
+        "uncertainty_contributors": uncertainty,
+        "missing_required_inputs": missing_inputs,
+        "detector_conflicts": conflict,
+        "combined_conflict_k": combined.conflict_k,
+        "combination_rule": combined.combination_rule,
+        "quorum": {
+            "met": quorum_met,
+            "non_trivial_detectors": non_trivial_count(results.values()),
+            "minimum_required": policy.minimum_detectors_required,
+        },
+        "action_reason": _action_reason(action, threat_tier, quorum_met, policy),
+        "policy": {
+            "version": policy.version,
+            "environment": policy.environment,
+            "shadow_mode": policy.shadow_mode,
+            "policy_hash": policy_hash(policy),
+        },
+    }
+
+
+def _action_reason(action: str, threat_tier: str, quorum_met: bool, policy: Any) -> str:
+    if policy.shadow_mode:
+        return "shadow_mode_forces_monitor"
+    if threat_tier == "emergency_escalation":
+        return "emergency_bypass"
+    if not quorum_met:
+        return "insufficient_evidence_quorum_not_met"
+    return f"threshold_action:{action}"

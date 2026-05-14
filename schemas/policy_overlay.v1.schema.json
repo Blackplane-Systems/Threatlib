@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://blackplane.systems/threatlib/schemas/policy_overlay.v1.schema.json",
+  "title": "ThreatLib Policy Overlay v1",
+  "type": "object",
+  "required": ["threatlib"],
+  "properties": {
+    "threatlib": {
+      "type": "object",
+      "description": "Partial ThreatLib policy overlay applied over a complete base policy."
+    }
+  },
+  "additionalProperties": false
+}
