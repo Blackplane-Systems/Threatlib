@@ -1,0 +1,40 @@
+{
+  "name": "demo-payment-thresholds",
+  "enabled": true,
+  "architecture": "threshold_rules_v1",
+  "feature_map": {
+    "transaction_velocity_24h": "metadata.transaction_velocity_24h",
+    "recipient_count_24h": "metadata.transaction_recipient_count_24h",
+    "upi_id_age_days": "metadata.upi_id_age_days"
+  },
+  "required_features": [
+    "transaction_velocity_24h"
+  ],
+  "inline_model": {
+    "default_score": 0.50,
+    "confidence": 0.70,
+    "rules": [
+      {
+        "feature": "transaction_velocity_24h",
+        "op": ">=",
+        "value": 30,
+        "score": 0.88,
+        "label": "fraud",
+        "reason": "high_transaction_velocity"
+      },
+      {
+        "feature": "upi_id_age_days",
+        "op": "<",
+        "value": 3,
+        "score": 0.76,
+        "label": "fraud",
+        "reason": "new_payment_identifier"
+      }
+    ]
+  },
+  "confidence": 0.65,
+  "tags": [
+    "payment",
+    "demo"
+  ]
+}

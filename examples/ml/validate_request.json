@@ -1,0 +1,33 @@
+{
+  "model": {
+    "name": "demo-api-abuse-logistic",
+    "enabled": true,
+    "architecture": "json_logistic_v1",
+    "feature_map": {
+      "request_rate_per_minute": "metadata.request_rate_per_minute",
+      "failed_login_count": "metadata.failed_login_count",
+      "datacenter_ip": "ip_is_datacenter"
+    },
+    "required_features": [
+      "request_rate_per_minute",
+      "failed_login_count"
+    ],
+    "inline_model": {
+      "intercept": -2.0,
+      "coefficients": {
+        "request_rate_per_minute": 0.05,
+        "failed_login_count": 0.20,
+        "datacenter_ip": 1.10
+      },
+      "confidence": 0.70
+    }
+  },
+  "account_data": {
+    "account_id": "ml_demo_account",
+    "ip_is_datacenter": true,
+    "metadata": {
+      "request_rate_per_minute": 95,
+      "failed_login_count": 8
+    }
+  }
+}

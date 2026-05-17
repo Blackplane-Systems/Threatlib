@@ -48,3 +48,30 @@ The DAG orchestrator validates acyclicity at startup. A detector cannot depend o
 ## Storage
 
 Do not persist plaintext PII from detectors. Store hashes, prefixes, aggregates, or derived feature values only.
+
+## ML Model Plugins
+
+Use an ML model plugin when the detector behavior is already represented by a trained or rule-based model and the required integration work is input selection plus output normalization.
+
+Model plugins are declared in policy under `ml_models`. The `ml_model` detector runs after lower-level detectors, so a model can use both request fields and detector outputs:
+
+```yaml
+ml_models:
+  - name: "identity-risk-v1"
+    architecture: "json_logistic_v1"
+    feature_map:
+      email_fraud_mass: "detectors.email_entropy.fraud_mass"
+      username_fraud_mass: "detectors.psycholinguistic.fraud_mass"
+      request_rate: "metadata.request_rate_per_minute"
+    required_features:
+      - email_fraud_mass
+      - username_fraud_mass
+    inline_model:
+      intercept: -1.5
+      coefficients:
+        email_fraud_mass: 2.0
+        username_fraud_mass: 1.5
+        request_rate: 0.03
+```
+
+If the selected model inputs are absent, the model contributes uncertainty. This preserves the same missing-data contract expected from handwritten detectors.

@@ -20,7 +20,7 @@ ThreatLib is organized into seven operational layers:
 2. **Platform Adapters:** Event and field normalization for social, messaging, payment, health, marketplace, video, and generic platforms.
 3. **Independent Detectors:** Detectors that rely only on account data, event data, or persisted context.
 4. **Interdependent Detectors:** DAG-scheduled detectors that use outputs from lower layers.
-5. **Risk Synthesis:** Evidence fusion, quorum enforcement, temporal decay, signal weighting, jitter, and confidence bands.
+5. **Risk Synthesis:** Evidence fusion, quorum enforcement, temporal decay, signal weighting, ML model plugin evidence, jitter, and confidence bands.
 6. **Action Engine:** Threshold-based actions, feature restrictions, emergency bypass handling, and network isolation metadata.
 7. **Interfaces:** FastAPI service, Python SDK surface, JavaScript timing collector, Android Kotlin SDK sketch, Streamlit dashboard, and federation schema.
 
@@ -82,6 +82,7 @@ The detector library includes:
 - HMM intent inference
 - SIR contagion modeling
 - Coordinated behavior detection
+- Developer-supplied ML model plugins
 
 ## Mathematical Components
 
@@ -146,6 +147,13 @@ threatlib-policy explain --config threatlib.yaml
 threatlib-preset list
 ```
 
+Validate a developer-supplied ML model plugin:
+
+```bash
+threatlib-ml catalog
+threatlib-ml validate --model examples/ml/logistic_model.json --sample examples/ml/sample_account.json
+```
+
 Import public calibration and threat-intelligence datasets:
 
 ```bash
@@ -191,6 +199,7 @@ The FastAPI service provides:
 - `POST /appeal` for appeal submission
 - `POST /feedback` for confirmed `true_positive`, `true_negative`, `false_positive`, and `false_negative` labels
 - `POST /replay` for deterministic policy and event replay simulation
+- `POST /ml/validate` for ML model plugin input/output validation
 - `GET /account/{account_id}` for privacy-safe account state
 - `GET /health` for service status
 - `GET /metrics` for operational counters
@@ -198,6 +207,7 @@ The FastAPI service provides:
 - `GET /metrics/detectors` for detector activation and uncertainty health
 - `GET /metrics/replay` for the latest replay summary
 - `GET /metrics/prometheus` for Prometheus-compatible process and engine metrics
+- `GET /ml/models` for configured ML model plugins and built-in architecture metadata
 - `GET /policy/active` for active policy metadata and hash
 - `GET /policy/lint` for deployment-safety warnings
 - `GET /presets` and `GET /presets/{name}` for deployment preset discovery
@@ -244,6 +254,48 @@ The default policy lives in `threatlib.yaml`. Important sections include:
 - `persistent_homology`
 - `canary`
 - `fast_deploy`
+- `ml_models`
+
+## ML Model Plugins
+
+ThreatLib can ingest evidence from developer-supplied ML models without changing the core scoring pipeline. A model plugin declares:
+
+- which account or detector-output fields are selected for the model input JSON
+- which architecture adapter runs the model
+- where the model's score, label, confidence, and reason appear in the output JSON
+- which selected features are required before the model may contribute evidence
+
+The public engine includes two local adapters:
+
+- `json_logistic_v1` for coefficient-based logistic models stored as JSON
+- `threshold_rules_v1` for ordered threshold rules over selected JSON features
+
+Model plugins are configured under `ml_models` in `threatlib.yaml`. They are executed by the `ml_model` detector after lower-level detectors have run. If required model fields are missing, the model contributes uncertainty. If a model path is invalid, the model contributes uncertainty. Model input payloads are not stored in detector metadata or the audit log.
+
+Example model declaration:
+
+```json
+{
+  "name": "demo-api-abuse-logistic",
+  "architecture": "json_logistic_v1",
+  "feature_map": {
+    "request_rate_per_minute": "metadata.request_rate_per_minute",
+    "failed_login_count": "metadata.failed_login_count",
+    "datacenter_ip": "ip_is_datacenter"
+  },
+  "required_features": ["request_rate_per_minute", "failed_login_count"],
+  "inline_model": {
+    "intercept": -2.0,
+    "coefficients": {
+      "request_rate_per_minute": 0.05,
+      "failed_login_count": 0.20,
+      "datacenter_ip": 1.10
+    }
+  }
+}
+```
+
+The model output score is converted into Dempster-Shafer evidence through probability odds, then combined with every other detector subject to quorum, weights, shadow mode, and audit logging.
 
 ## Repository Map
 
@@ -263,12 +315,14 @@ The default policy lives in `threatlib.yaml`. Important sections include:
 - `threatlib/intel/`: safe threat-intelligence importers and hashed retention
 - `threatlib/pretrain/`: public-dataset baseline model training
 - `threatlib/models/base_model.json`: compact pretrained baseline artifact
+- `threatlib/ml/`: ML model plugin adapters and validation CLI
 - `threatlib/contagion/`: SIR and Ising models
 - `threatlib/dashboard/app.py`: Streamlit dashboard
 - `js-sdk/threatlib-timing.js`: browser timing collector
 - `android-sdk/threatlib-android/`: Android SDK sketch
 - `deployment/`: Kubernetes, Helm, and Grafana starter artifacts
 - `examples/`: scoring and replay examples
+- `examples/ml/`: model plugin examples and sample validation input
 - `schemas/`: versioned replay and policy overlay schemas
 - `docs/`: progressive operating guides
 - `tests/`: unit and integration tests
@@ -313,7 +367,7 @@ pytest tests/ -v --tb=short
 ```
 
 The tests cover detector contracts, evidence fusion, privacy behavior, adapters, DAG execution, v2 detectors, contagion models, graph topology helpers, action handling, API integration, CSAM bypass behavior, and packaging entry points.
-Threat-intelligence tests additionally verify allowlist enforcement, inert URLhaus parsing, hashed indicator storage, derived-only training features, and expiry pruning.
+Threat-intelligence tests additionally verify allowlist enforcement, inert URLhaus parsing, hashed indicator storage, derived-only training features, and expiry pruning. ML plugin tests verify feature selection, model output mapping, missing-feature uncertainty, API validation, and audit-safe metadata.
 
 ## Operational Guidance
 

@@ -10,9 +10,10 @@ from fastapi import FastAPI, HTTPException, Response
 from pydantic import BaseModel, Field
 import uvicorn
 
-from threatlib.config.policy import Policy, PolicyLoader
+from threatlib.config.policy import MLModelConfig, Policy, PolicyLoader
 from threatlib.adapters import AdapterRegistry
 from threatlib.graph.account_graph import AccountGraph, hash_value
+from threatlib.ml.plugins import MLPluginError, model_catalog, validate_model_config
 from threatlib.observability.metrics import detector_metrics, prometheus_text, replay_metrics
 from threatlib.policy.versioning import lint_policy, policy_summary
 from threatlib.presets import list_presets, load_preset
@@ -57,6 +58,11 @@ class ReplayRequest(BaseModel):
     deterministic: bool = True
     shadow_mode: bool | None = None
     persist: bool = False
+
+
+class MLValidateRequest(BaseModel):
+    model: MLModelConfig
+    account_data: dict[str, Any]
 
 
 def create_app(
@@ -216,6 +222,30 @@ def create_app(
     @app.get("/metrics/model")
     async def model_metrics_endpoint(since_hours: float | None = None) -> dict[str, Any]:
         return model_metrics(store, since_hours)
+
+    @app.get("/ml/models")
+    async def ml_models_endpoint() -> dict[str, Any]:
+        return {
+            "architectures": model_catalog(),
+            "configured_models": [
+                {
+                    "name": model.name,
+                    "enabled": model.enabled,
+                    "architecture": model.architecture,
+                    "feature_keys": sorted(model.feature_map),
+                    "required_features": model.required_features,
+                    "tags": model.tags,
+                }
+                for model in loaded_policy.ml_models
+            ],
+        }
+
+    @app.post("/ml/validate")
+    async def ml_validate_endpoint(payload: MLValidateRequest) -> dict[str, Any]:
+        try:
+            return validate_model_config(payload.model, payload.account_data)
+        except (MLPluginError, ValueError, OSError) as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     @app.get("/metrics/prometheus")
     async def prometheus_endpoint() -> Response:

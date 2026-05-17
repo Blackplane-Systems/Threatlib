@@ -35,6 +35,7 @@ threatlib-feedback = "threatlib.feedback_cli:main"
 threatlib-replay = "threatlib.replay.engine:main"
 threatlib-policy = "threatlib.policy.versioning:main"
 threatlib-preset = "threatlib.presets.loader:main"
+threatlib-ml = "threatlib.ml.cli:main"
 
 [tool.setuptools.package-data]
 threatlib = ["models/*.json", "models/README.md", "presets/*.yaml"]

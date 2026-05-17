@@ -125,3 +125,15 @@ Formula: content_posted_count / max(content_consumed_count, 1)
 File: threatlib/signals/content_signal.py
 Function: ContentSignalDetector.score(account_data)
 Test: tests/test_detectors.py::test_direct_bot_detectors_emit_fraud
+
+## 21. ML Logistic Adapter
+Formula: score = 1 / (1 + exp(-(intercept + sum_i coefficient_i * feature_i)))
+File: threatlib/ml/plugins.py
+Function: _run_json_logistic(model_config, model, model_input) -> dict
+Test: tests/test_ml_plugins.py::test_json_logistic_model_maps_selected_features_only
+
+## 22. ML Score to Likelihood Ratio
+Formula: LR = score / (1 - score)
+File: threatlib/ml/plugins.py
+Function: prediction_to_detector_result(model_config, mapped_output) -> DetectorResult
+Test: tests/test_ml_plugins.py::test_json_logistic_model_maps_selected_features_only

@@ -206,6 +206,32 @@ class FastDeployConfig(BaseModel):
     active_action_cap: str = "soft_restrict"
 
 
+class MLModelConfig(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    name: str
+    enabled: bool = True
+    architecture: str = "json_logistic_v1"
+    feature_map: dict[str, str] = Field(default_factory=dict)
+    input_schema: dict[str, Any] = Field(default_factory=dict)
+    output_schema: dict[str, Any] = Field(default_factory=dict)
+    output_mapping: dict[str, str] = Field(
+        default_factory=lambda: {
+            "score": "score",
+            "label": "label",
+            "confidence": "confidence",
+            "reason": "reason",
+        }
+    )
+    model_path: str | None = None
+    inline_model: dict[str, Any] = Field(default_factory=dict)
+    weight: float = Field(default=1.0, ge=0.0)
+    confidence: float = Field(default=0.65, ge=0.0, le=1.0)  # REF: Conservative default confidence for externally supplied model outputs.
+    required_features: list[str] = Field(default_factory=list)
+    tenant_scope: dict[str, str] = Field(default_factory=dict)
+    tags: list[str] = Field(default_factory=list)
+
+
 class Policy(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -265,6 +291,7 @@ class Policy(BaseModel):
     canary: CanaryConfig = Field(default_factory=CanaryConfig)
     threat_intel: ThreatIntelConfig = Field(default_factory=ThreatIntelConfig)
     fast_deploy: FastDeployConfig = Field(default_factory=FastDeployConfig)
+    ml_models: list[MLModelConfig] = Field(default_factory=list)
 
     @model_validator(mode="after")
     def validate_thresholds(self) -> "Policy":
@@ -358,5 +385,22 @@ def detector_attack_vectors(name: str) -> set[str]:
         "hmm_intent": {"AV-04", "AV-09", "AV-12", "AV-13", "AV-14"},
         "sir_contagion": {"AV-06", "AV-11", "AV-08"},
         "coordinated_behavior": {"AV-06", "AV-05", "AV-08", "AV-09", "AV-11"},
+        "ml_model": {
+            "AV-01",
+            "AV-02",
+            "AV-03",
+            "AV-04",
+            "AV-05",
+            "AV-06",
+            "AV-07",
+            "AV-08",
+            "AV-09",
+            "AV-10",
+            "AV-11",
+            "AV-12",
+            "AV-13",
+            "AV-14",
+            "AV-15",
+        },
     }
     return mapping.get(name, set())

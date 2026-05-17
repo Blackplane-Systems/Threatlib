@@ -59,3 +59,12 @@ threatlib-preset show fintech_risk
 ```
 
 Presets are overlays. They do not replace the safety invariants in the base policy.
+
+## Validate an ML Model Plugin
+
+```bash
+threatlib-ml catalog
+threatlib-ml validate --model examples/ml/logistic_model.json --sample examples/ml/sample_account.json
+```
+
+The validation output shows the selected model input JSON, mapped model output, and equivalent detector result. Model plugins remain inactive until they are declared under `ml_models` in the active policy.

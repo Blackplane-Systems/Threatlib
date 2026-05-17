@@ -45,6 +45,7 @@ threatlib:
     hmm_intent:                 { weight: 1.5, enabled: true, decay_halflife_days: 7 }
     sir_contagion:              { weight: 1.0, enabled: true, decay_halflife_days: 30 }
     coordinated_behavior:       { weight: 2.0, enabled: true, decay_halflife_days: 7 }
+    ml_model:                   { weight: 1.0, enabled: true, decay_halflife_days: 7 }
 
   action_thresholds:
     monitor:            0.00
@@ -208,3 +209,5 @@ threatlib:
     min_precision: 0.70
     min_recall: 0.60
     active_action_cap: "soft_restrict"
+
+  ml_models: []

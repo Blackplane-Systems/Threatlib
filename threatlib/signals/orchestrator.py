@@ -23,6 +23,7 @@ def default_detector_classes() -> dict[str, type[BaseDetector]]:
     from threatlib.signals.external_link_pattern import ExternalLinkPatternDetector
     from threatlib.signals.hawkes_burst_v2 import HawkesBurstDetectorV2
     from threatlib.signals.hmm_intent import HMMIntentDetector
+    from threatlib.signals.ml_model import MLModelDetector
     from threatlib.signals.payment_signal import PaymentSignalDetector
     from threatlib.signals.sir_contagion import SIRContagionDetector
     from threatlib.signals.survival_analysis import SurvivalAnalysisDetector
@@ -41,6 +42,7 @@ def default_detector_classes() -> dict[str, type[BaseDetector]]:
             "hmm_intent": HMMIntentDetector,
             "sir_contagion": SIRContagionDetector,
             "coordinated_behavior": CoordinatedBehaviorDetector,
+            "ml_model": MLModelDetector,
         }
     )
     return classes

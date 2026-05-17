@@ -37,6 +37,12 @@ curl -X POST http://127.0.0.1:8000/score \
 
 `explainability` lists top contributors, missing required inputs, uncertainty contributors, detector conflicts, policy hash, and action reasoning.
 
+## ML Model Evidence
+
+If the active policy declares `ml_models`, the `ml_model` detector appears in the detector output. It selects only the configured input fields, maps the model output JSON into a standard prediction shape, and converts the mapped score into detector evidence.
+
+Missing required model features are reported under `detectors.ml_model.metadata.missing_features` and contribute uncertainty.
+
 ## Shadow Mode
 
 When `shadow_mode: true`, ThreatLib still computes scores and logs audit records, but the returned action is always `monitor`. This lets operators compare scores to real outcomes before enforcement.
