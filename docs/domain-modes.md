@@ -8,7 +8,7 @@ The first domain-mode set covers:
 - `chat_app`
 - `gaming`
 
-Each mode defines the adapter, attack-vector focus, feature restriction map, high-impact actions, detector weight adjustments, expected event coverage, calibration requirements, and domain-native behavioral detectors.
+Each mode defines the adapter, attack-vector focus, feature restriction map, high-impact actions, detector weight adjustments, expected event coverage, calibration requirements, domain-native behavioral detectors, and scenario-level playbook detection.
 
 ## Why Domain Modes Exist
 
@@ -27,6 +27,8 @@ The general detector set remains active in every mode. Domain-native detectors a
 `chat_abuse` looks for messaging-specific abuse: forward-dominated communication, broadcast messages carrying links, rapid group creation or member seeding, multi-recipient link fan-out, one-way outbound messaging, and high-volume call fan-out. It can emit weak legitimate evidence for reciprocal low-link conversations.
 
 `gaming_integrity` looks for game-native abuse: repeated short match loops, new accounts entering ranked play at high velocity, early virtual-goods movement, high normalized economy value moved by a new account, player-report density tied to chat, party or guild activity tied to trading, and repeated match-result patterns. It can emit weak legitimate evidence for normal match play without early economy movement or reports.
+
+`domain_scenario` runs after the domain-native detectors and looks for complete attack playbooks. In social mode it recognizes profile-to-DM phishing funnels, comment redirect campaigns, new-account amplification clusters, creator impersonation outreach, and agreement between behavior and HMM intent. In chat mode it recognizes forward cascades, new-account group seeding, broadcast fan-out, link-campaign alignment, and minor-safety outreach scenarios. In gaming mode it recognizes ranked short-loop farming, new-account economy mule behavior, reported chat harassment, party or guild economy coordination, and alignment between gaming integrity and account-age velocity.
 
 These detectors return `DetectorResult.uncertain()` when the relevant event surface is absent. They do not infer that a product is safe because it does not send social, chat, or game events.
 
