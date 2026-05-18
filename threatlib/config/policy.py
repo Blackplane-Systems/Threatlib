@@ -386,6 +386,9 @@ def detector_attack_vectors(name: str) -> set[str]:
         "hmm_intent": {"AV-04", "AV-09", "AV-12", "AV-13", "AV-14"},
         "sir_contagion": {"AV-06", "AV-11", "AV-08"},
         "coordinated_behavior": {"AV-06", "AV-05", "AV-08", "AV-09", "AV-11"},
+        "social_behavior": {"AV-03", "AV-04", "AV-05", "AV-06", "AV-08", "AV-09", "AV-11"},
+        "chat_abuse": {"AV-04", "AV-05", "AV-06", "AV-08", "AV-09", "AV-14"},
+        "gaming_integrity": {"AV-01", "AV-02", "AV-06", "AV-09", "AV-11", "AV-12", "AV-15"},
         "ml_model": {
             "AV-01",
             "AV-02",

@@ -82,6 +82,9 @@ The detector library includes:
 - HMM intent inference
 - SIR contagion modeling
 - Coordinated behavior detection
+- Social-feed and DM-funnel behavior detection
+- Chat forwarding, broadcast, and group-seeding abuse detection
+- Gaming session, ranked-play, and virtual-economy integrity detection
 - Developer-supplied ML model plugins
 
 ## Mathematical Components
@@ -244,7 +247,7 @@ Domain modes provide stronger product-specific defaults than a generic policy wh
 - `chat_app`: direct messages, forwards, broadcast messaging, group abuse, calls, and link safety.
 - `gaming`: matchmaking, chat, item trading, gifting, parties, guilds, and player-report abuse.
 
-Each mode defines attack-vector focus, feature restrictions, high-impact actions, detector weight adjustments, expected event coverage, and calibration requirements. Use `threatlib-domain show <mode>` and `threatlib-domain calibration <mode>` before applying a mode to production policy.
+Each mode defines attack-vector focus, feature restrictions, high-impact actions, detector weight adjustments, expected event coverage, calibration requirements, and domain-native behavioral detectors. Use `threatlib-domain show <mode>` and `threatlib-domain calibration <mode>` before applying a mode to production policy.
 
 ## Configuration
 

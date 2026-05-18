@@ -20,6 +20,7 @@ def default_detector_classes() -> dict[str, type[BaseDetector]]:
     from threatlib.signals.coordinated_behavior import CoordinatedBehaviorDetector
     from threatlib.signals.cross_entropy_coherence import CrossEntropyCoherenceDetector
     from threatlib.signals.cross_signal_coherence import CrossSignalCoherenceDetector
+    from threatlib.signals.domain_behavior import ChatAbuseDetector, GamingIntegrityDetector, SocialBehaviorDetector
     from threatlib.signals.external_link_pattern import ExternalLinkPatternDetector
     from threatlib.signals.hawkes_burst_v2 import HawkesBurstDetectorV2
     from threatlib.signals.hmm_intent import HMMIntentDetector
@@ -42,6 +43,9 @@ def default_detector_classes() -> dict[str, type[BaseDetector]]:
             "hmm_intent": HMMIntentDetector,
             "sir_contagion": SIRContagionDetector,
             "coordinated_behavior": CoordinatedBehaviorDetector,
+            "social_behavior": SocialBehaviorDetector,
+            "chat_abuse": ChatAbuseDetector,
+            "gaming_integrity": GamingIntegrityDetector,
             "ml_model": MLModelDetector,
         }
     )

@@ -36,6 +36,9 @@ DOMAIN_PROFILES: dict[str, dict[str, Any]] = {
             "coordinated_behavior": 1.75,
             "report_history": 1.40,
             "graph_distance": 1.45,
+            "social_behavior": 1.75,
+            "chat_abuse": 0.75,
+            "gaming_integrity": 0.50,
             "ml_model": 1.00,
         },
         "feature_restrictions": {
@@ -81,6 +84,9 @@ DOMAIN_PROFILES: dict[str, dict[str, Any]] = {
             "session_anomaly": 1.35,
             "graph_distance": 1.30,
             "coordinated_behavior": 1.55,
+            "social_behavior": 0.80,
+            "chat_abuse": 1.85,
+            "gaming_integrity": 0.50,
             "ml_model": 1.00,
         },
         "feature_restrictions": {
@@ -126,6 +132,9 @@ DOMAIN_PROFILES: dict[str, dict[str, Any]] = {
             "community_detection": 1.35,
             "hmm_intent": 1.30,
             "report_history": 1.30,
+            "social_behavior": 0.50,
+            "chat_abuse": 0.65,
+            "gaming_integrity": 1.85,
             "ml_model": 1.00,
         },
         "feature_restrictions": {
