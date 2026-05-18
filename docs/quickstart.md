@@ -56,9 +56,20 @@ threatlib-policy lint --config threatlib.yaml
 threatlib-policy explain --config threatlib.yaml
 threatlib-preset list
 threatlib-preset show fintech_risk
+threatlib-domain list
+threatlib-domain show social_media
 ```
 
 Presets are overlays. They do not replace the safety invariants in the base policy.
+
+## Apply a Domain Mode
+
+```bash
+threatlib-domain calibration chat_app
+threatlib-domain apply chat_app --base threatlib.yaml --output policies/chat-app.yaml
+```
+
+Domain modes tune adapter choice, attack-vector focus, detector weights, feature restrictions, high-impact actions, and calibration requirements for a product surface.
 
 ## Validate an ML Model Plugin
 

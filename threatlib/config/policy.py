@@ -239,6 +239,7 @@ class Policy(BaseModel):
     version: str
     environment: str
     shadow_mode: bool
+    domain_mode: str = "generic"
     cold_start: ColdStartConfig
     minimum_detectors_required: int = Field(gt=0)
     signals: dict[str, SignalConfig]

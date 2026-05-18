@@ -12,6 +12,7 @@ import uvicorn
 
 from threatlib.config.policy import MLModelConfig, Policy, PolicyLoader
 from threatlib.adapters import AdapterRegistry
+from threatlib.domains import domain_calibration_plan, domain_policy_preview, get_domain_profile, list_domain_modes
 from threatlib.graph.account_graph import AccountGraph, hash_value
 from threatlib.ml.plugins import MLPluginError, model_catalog, validate_model_config
 from threatlib.observability.metrics import detector_metrics, prometheus_text, replay_metrics
@@ -267,6 +268,31 @@ def create_app(
     async def preset_endpoint(preset_name: str) -> dict[str, Any]:
         try:
             return load_preset(preset_name)
+        except ValueError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+    @app.get("/domains")
+    async def domains_endpoint() -> dict[str, Any]:
+        return {"domain_modes": list_domain_modes()}
+
+    @app.get("/domains/{mode}/policy-preview")
+    async def domain_preview_endpoint(mode: str) -> dict[str, Any]:
+        try:
+            return domain_policy_preview(loaded_policy, mode)
+        except ValueError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+    @app.get("/domains/{mode}/calibration")
+    async def domain_calibration_endpoint(mode: str) -> dict[str, Any]:
+        try:
+            return domain_calibration_plan(mode)
+        except ValueError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+    @app.get("/domains/{mode}")
+    async def domain_endpoint(mode: str) -> dict[str, Any]:
+        try:
+            return get_domain_profile(mode)
         except ValueError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
 

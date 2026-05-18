@@ -43,6 +43,10 @@ If the active policy declares `ml_models`, the `ml_model` detector appears in th
 
 Missing required model features are reported under `detectors.ml_model.metadata.missing_features` and contribute uncertainty.
 
+## Domain Mode Context
+
+The active policy may declare `domain_mode`, such as `social_media`, `chat_app`, or `gaming`. Domain mode changes policy emphasis and restrictions; it does not change the meaning of `risk_score`. The same score response still reports detector evidence, quorum state, action reasoning, restrictions, and audit ID.
+
 ## Shadow Mode
 
 When `shadow_mode: true`, ThreatLib still computes scores and logs audit records, but the returned action is always `monitor`. This lets operators compare scores to real outcomes before enforcement.

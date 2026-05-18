@@ -3,6 +3,7 @@ threatlib:
   version: "2.0"
   environment: "shadow_mode"
   shadow_mode: true
+  domain_mode: "generic"
   platform_adapter: "social_network"
 
   cold_start:

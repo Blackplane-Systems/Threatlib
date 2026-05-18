@@ -145,6 +145,8 @@ Inspect and validate policy state:
 threatlib-policy lint --config threatlib.yaml
 threatlib-policy explain --config threatlib.yaml
 threatlib-preset list
+threatlib-domain list
+threatlib-domain calibration social_media
 ```
 
 Validate a developer-supplied ML model plugin:
@@ -211,6 +213,7 @@ The FastAPI service provides:
 - `GET /policy/active` for active policy metadata and hash
 - `GET /policy/lint` for deployment-safety warnings
 - `GET /presets` and `GET /presets/{name}` for deployment preset discovery
+- `GET /domains`, `GET /domains/{mode}`, `GET /domains/{mode}/policy-preview`, and `GET /domains/{mode}/calibration` for domain-mode deployment planning
 - `GET /deployment/fast-status` for fast-deploy readiness checks
 - `GET /graph` for graph and community visibility
 
@@ -232,6 +235,16 @@ ThreatLib includes composable presets for common rollout shapes:
 - `messaging_safety`
 
 Presets are partial policy overlays. They configure adapters, attack-vector focus, feature restrictions, and high-impact actions while preserving the base policy's invariants. Operators can inspect and apply them with `threatlib-preset`.
+
+## Domain Modes
+
+Domain modes provide stronger product-specific defaults than a generic policy while preserving the same detector and audit contracts. The first supported modes are:
+
+- `social_media`: feed, profile, comment, follow, DM, group, and external-link abuse.
+- `chat_app`: direct messages, forwards, broadcast messaging, group abuse, calls, and link safety.
+- `gaming`: matchmaking, chat, item trading, gifting, parties, guilds, and player-report abuse.
+
+Each mode defines attack-vector focus, feature restrictions, high-impact actions, detector weight adjustments, expected event coverage, and calibration requirements. Use `threatlib-domain show <mode>` and `threatlib-domain calibration <mode>` before applying a mode to production policy.
 
 ## Configuration
 
@@ -255,6 +268,7 @@ The default policy lives in `threatlib.yaml`. Important sections include:
 - `canary`
 - `fast_deploy`
 - `ml_models`
+- `domain_mode`
 
 ## ML Model Plugins
 
@@ -308,6 +322,7 @@ The model output score is converted into Dempster-Shafer evidence through probab
 - `threatlib/adapters/`: platform adapters
 - `threatlib/replay/`: deterministic replay and policy simulation
 - `threatlib/presets/`: composable deployment presets
+- `threatlib/domains/`: social, chat, and gaming domain-mode profiles
 - `threatlib/policy/`: policy hashing, linting, summaries, and diffs
 - `threatlib/observability/`: metrics and Prometheus export helpers
 - `threatlib/sdk/`: detector authoring harness
