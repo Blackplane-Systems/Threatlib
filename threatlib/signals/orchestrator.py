@@ -16,6 +16,7 @@ class DetectorDAGError(ValueError):
 def default_detector_classes() -> dict[str, type[BaseDetector]]:
     from threatlib.risk.synthesis import DETECTOR_CLASSES as V1_DETECTORS
     from threatlib.signals.account_age_velocity import AccountAgeVelocityDetector
+    from threatlib.signals.behavioral_drift import BehavioralDriftDetector
     from threatlib.signals.community_detection import CommunityDetectionDetector
     from threatlib.signals.coordinated_behavior import CoordinatedBehaviorDetector
     from threatlib.signals.cross_entropy_coherence import CrossEntropyCoherenceDetector
@@ -28,6 +29,7 @@ def default_detector_classes() -> dict[str, type[BaseDetector]]:
     from threatlib.signals.ml_model import MLModelDetector
     from threatlib.signals.payment_signal import PaymentSignalDetector
     from threatlib.signals.sir_contagion import SIRContagionDetector
+    from threatlib.signals.stalking_safety import StalkingSafetyDetector
     from threatlib.signals.survival_analysis import SurvivalAnalysisDetector
 
     classes = dict(V1_DETECTORS)
@@ -48,6 +50,8 @@ def default_detector_classes() -> dict[str, type[BaseDetector]]:
             "chat_abuse": ChatAbuseDetector,
             "gaming_integrity": GamingIntegrityDetector,
             "domain_scenario": DomainScenarioDetector,
+            "behavioral_drift": BehavioralDriftDetector,
+            "stalking_safety": StalkingSafetyDetector,
             "ml_model": MLModelDetector,
         }
     )

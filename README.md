@@ -86,6 +86,8 @@ The detector library includes:
 - Chat forwarding, broadcast, and group-seeding abuse detection
 - Gaming session, ranked-play, and virtual-economy integrity detection
 - Scenario-level domain playbook detection
+- Established-account behavioral drift detection with temporary feature holds
+- Stalking and target-fixation safety detection
 - Developer-supplied ML model plugins
 
 ## Mathematical Components
@@ -220,6 +222,8 @@ The FastAPI service provides:
 - `GET /domains`, `GET /domains/{mode}`, `GET /domains/{mode}/policy-preview`, and `GET /domains/{mode}/calibration` for domain-mode deployment planning
 - `GET /deployment/fast-status` for fast-deploy readiness checks
 - `GET /graph` for graph and community visibility
+
+Score responses include `temporary_restrictions` when a detector recommends a short-lived feature hold for review. These holds are used for cases such as an established account suddenly repeating an action it historically did not perform, or a user repeatedly viewing and contacting the same target. They restrict the relevant feature while preserving account access unless other independent threat evidence supports stronger action.
 
 ## Replay and Policy Simulation
 

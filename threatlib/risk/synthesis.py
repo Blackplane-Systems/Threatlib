@@ -114,6 +114,9 @@ class RiskSynthesizer:
             threat_tier = "tier_3_cluster"
         action = compute_action(jittered_score, self.policy) if has_quorum else "monitor"
         action = apply_fast_deploy_action_policy(action, self.policy, self.graph)
+        temporary_restrictions = collect_temporary_restrictions(adjusted_results)
+        restrictions = apply_temporary_restrictions(restrictions, temporary_restrictions)
+        action = apply_temporary_action_cap(action, adjusted_results)
         if emergency_action:
             action = emergency_action
             threat_tier = "emergency_escalation"
@@ -144,6 +147,7 @@ class RiskSynthesizer:
             "action": action,
             "threat_tier": threat_tier,
             "restrictions": restrictions,
+            "temporary_restrictions": temporary_restrictions,
             "detectors": {name: result.to_dict() for name, result in adjusted_results.items()},
             "combined": combined.to_dict(),
             "quorum": {
@@ -187,6 +191,83 @@ def compute_action(risk_score: float, policy: Any) -> str:
         if risk_score >= threshold:
             return action
     return "monitor"
+
+
+def collect_temporary_restrictions(results: dict[str, DetectorResult]) -> list[dict[str, Any]]:
+    holds: list[dict[str, Any]] = []
+    for detector_name, result in results.items():
+        for hold in result.metadata.get("temporary_restrictions", []) if isinstance(result.metadata, dict) else []:
+            if not isinstance(hold, dict) or "feature" not in hold:
+                continue
+            level = hold.get("level", 0.0)
+            if not isinstance(level, (int, float)):
+                continue
+            holds.append(
+                {
+                    "detector": detector_name,
+                    "feature": str(hold["feature"]),
+                    "level": max(0.0, min(1.0, float(level))),
+                    "reason": str(hold.get("reason", "temporary detector hold")),
+                }
+            )
+    return holds
+
+
+def apply_temporary_restrictions(restrictions: dict[str, float], holds: list[dict[str, Any]]) -> dict[str, float]:
+    adjusted = dict(restrictions)
+    for hold in holds:
+        feature = str(hold["feature"])
+        adjusted[feature] = max(float(adjusted.get(feature, 0.0)), float(hold["level"]))
+    return adjusted
+
+
+def apply_temporary_action_cap(action: str, results: dict[str, DetectorResult]) -> str:
+    cap = _most_restrictive_temporary_cap(results)
+    if cap is None:
+        return action
+    if _max_non_temporary_fraud(results) >= 0.55:
+        return action
+    return _cap_action(action, cap)
+
+
+def _most_restrictive_temporary_cap(results: dict[str, DetectorResult]) -> str | None:
+    cap: str | None = None
+    for result in results.values():
+        if not isinstance(result.metadata, dict) or not result.metadata.get("analysis_without_suspension"):
+            continue
+        candidate = str(result.metadata.get("action_cap") or "review_queue")
+        if candidate not in ACTION_ORDER:
+            continue
+        if cap is None or ACTION_ORDER.index(candidate) < ACTION_ORDER.index(cap):
+            cap = candidate
+    return cap
+
+
+def _max_non_temporary_fraud(results: dict[str, DetectorResult]) -> float:
+    corroborating_detectors = {
+        "session_anomaly",
+        "report_history",
+        "domain_scenario",
+        "coordinated_behavior",
+        "graph_distance",
+        "external_link_pattern",
+        "content_signal",
+        "community_detection",
+        "enterprise_domain_matrix",
+        "enterprise_campaign_scenario",
+    }
+    return max(
+        (result.fraud_mass for name, result in results.items() if name in corroborating_detectors),
+        default=0.0,
+    )
+
+
+def _cap_action(action: str, cap: str) -> str:
+    if action not in ACTION_ORDER or cap not in ACTION_ORDER:
+        return action
+    if ACTION_ORDER.index(action) < ACTION_ORDER.index(cap):
+        return cap
+    return action
 
 
 def apply_jitter(risk_score: float, scale: float = 0.01, rng: random.Random | None = None) -> float:

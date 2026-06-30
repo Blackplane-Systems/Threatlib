@@ -40,6 +40,8 @@ DOMAIN_PROFILES: dict[str, dict[str, Any]] = {
             "chat_abuse": 0.75,
             "gaming_integrity": 0.50,
             "domain_scenario": 1.85,
+            "behavioral_drift": 1.40,
+            "stalking_safety": 1.35,
             "ml_model": 1.00,
         },
         "feature_restrictions": {
@@ -89,6 +91,8 @@ DOMAIN_PROFILES: dict[str, dict[str, Any]] = {
             "chat_abuse": 1.85,
             "gaming_integrity": 0.50,
             "domain_scenario": 1.85,
+            "behavioral_drift": 1.35,
+            "stalking_safety": 1.45,
             "ml_model": 1.00,
         },
         "feature_restrictions": {
@@ -138,6 +142,8 @@ DOMAIN_PROFILES: dict[str, dict[str, Any]] = {
             "chat_abuse": 0.65,
             "gaming_integrity": 1.85,
             "domain_scenario": 1.85,
+            "behavioral_drift": 1.45,
+            "stalking_safety": 1.25,
             "ml_model": 1.00,
         },
         "feature_restrictions": {

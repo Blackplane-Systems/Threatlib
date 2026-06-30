@@ -50,6 +50,8 @@ threatlib:
     chat_abuse:                 { weight: 1.2, enabled: true, decay_halflife_days: 7 }
     gaming_integrity:           { weight: 1.2, enabled: true, decay_halflife_days: 7 }
     domain_scenario:            { weight: 1.4, enabled: true, decay_halflife_days: 7 }
+    behavioral_drift:           { weight: 1.3, enabled: true, decay_halflife_days: 3 }
+    stalking_safety:            { weight: 1.2, enabled: true, decay_halflife_days: 3 }
     ml_model:                   { weight: 1.0, enabled: true, decay_halflife_days: 7 }
 
   action_thresholds:

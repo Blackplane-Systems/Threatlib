@@ -21,9 +21,9 @@ all face abuse, but each platform observes different signals.
 ThreatLib solves this by treating account scoring as a platform-agnostic evidence problem. The
 platform sends whatever signals it can safely provide. Each detector reads only the fields it needs.
 When a detector lacks data, it returns uncertainty. The engine then combines available evidence
-without pretending that missing data proves the account is safe.
+without treating missing data as proof that the account is safe.
 
-Before you read further, open a terminal at the repository root and inspect the project layout.
+Open a terminal at the repository root and inspect the project layout.
 
 ```bash
 cd "D:\Vibe code\threatlib"
@@ -211,7 +211,7 @@ Open the detector contract:
 code threatlib/signals/base.py
 ```
 
-If you do not use VS Code, print the file:
+If VS Code is unavailable, print the file:
 
 ```bash
 Get-Content threatlib\signals\base.py
@@ -226,9 +226,9 @@ from being treated as a clean signal.
 
 ## Chapter 5: Why Missing Data Must Mean Uncertainty
 
-Suppose a web application has no mobile accelerometer data. An IMU detector should not say the user
-is legitimate because there is no suspicious accelerometer pattern. The correct answer is that the
-detector has no evidence.
+Suppose a web application has no mobile accelerometer data. An IMU detector should not classify the
+user as legitimate because there is no suspicious accelerometer pattern. The detector has no
+evidence.
 
 This is a common mistake in risk systems. Engineers sometimes encode missing values as zeros. A zero
 may then accidentally look like safe behavior. ThreatLib avoids this by making uncertainty explicit.
@@ -239,7 +239,7 @@ The invariant is:
 Absent data -> uncertain, never legitimate.
 ```
 
-You can observe this behavior in the tests:
+This behavior is covered by the tests:
 
 ```bash
 pytest tests/test_detectors.py::test_absent_data_returns_uncertain -v
@@ -411,8 +411,8 @@ Run the DAG cycle test:
 pytest tests/test_detectors_v2.py::test_detector_dag_cycle_detection -v
 ```
 
-This is a software architecture lesson. When modules depend on each other, you should make the
-dependency structure explicit and validate it early.
+This is a software architecture lesson. When modules depend on each other, the dependency structure
+should be explicit and validated early.
 
 ## Chapter 13: Behavioral Timing
 
@@ -529,8 +529,8 @@ Run the survival test:
 pytest tests/test_detectors_v2.py::test_survival_high_risk_shorter_eta -v
 ```
 
-This chapter connects statistics with operations. A model is not complete until you know how it will
-be calibrated.
+This chapter connects statistics with operations. A model is not complete until its calibration is
+defined.
 
 ## Chapter 19: Contagion and Belief Propagation
 
@@ -567,8 +567,9 @@ not configurable because child-safety escalation must not depend on operator thr
 
 ## Chapter 21: API Integration
 
-ThreatLib exposes a FastAPI surface. You can score accounts, ingest events, submit reports, create
-appeals, inspect account state, check health, read metrics, and view graph clusters.
+ThreatLib exposes a FastAPI surface for scoring accounts, ingesting events, submitting reports,
+creating appeals, inspecting account state, checking health, reading metrics, and viewing graph
+clusters.
 
 Run integration tests:
 
@@ -646,7 +647,7 @@ Auditability is a legal, operational, and engineering requirement.
 
 ## Chapter 24: Running a Manual Scoring Experiment
 
-You can run a manual score request by starting the server and posting JSON. First start the server:
+Run a manual score request by starting the server and posting JSON. First start the server:
 
 ```bash
 threatlib-server --config threatlib.yaml --host 127.0.0.1 --port 8000
@@ -675,8 +676,8 @@ audit identifier.
 
 ## Chapter 25: Reading the Tests as Documentation
 
-Tests are executable documentation. If you want to understand how a module is expected to behave,
-read its tests.
+Tests are executable documentation. To understand how a module is expected to behave, read its
+tests.
 
 Examples:
 
@@ -692,8 +693,8 @@ comments alone.
 
 ## Chapter 26: Recommended Reading Path
 
-Begin with `DetectorResult` and the detector contract. Then study Dempster-Shafer fusion. After that,
-read the risk synthesis pipeline. Once you understand scoring, move to adapters and the API server.
+Begin with `DetectorResult` and the detector contract. Then study Dempster-Shafer fusion. After
+that, read the risk synthesis pipeline. After scoring is clear, move to adapters and the API server.
 Finally, study advanced detectors such as HMM, Hawkes, SIR, survival analysis, and community
 detection.
 
@@ -720,7 +721,7 @@ universal events. Then add tests similar to `tests/test_adapters_v2.py`.
 Another exercise is to add a new detector. Start with a simple metadata detector. Declare required
 fields. Return uncertainty on absent data. Add clear bot, clear human, and absent data tests.
 
-You can also extend the dashboard. Add a page that displays detector uncertainty rates. This is a
+The dashboard can also be extended with a page that displays detector uncertainty rates. This is a
 useful operational metric because high uncertainty indicates missing instrumentation.
 
 ## Chapter 28: Common Mistakes to Avoid
